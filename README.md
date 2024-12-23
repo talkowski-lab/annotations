@@ -25,3 +25,5 @@ Each ```v0.x``` is associated with a published Dockstore workflow.
   - SpliceAI
 - ```v0.1```: annotate with only one (optional) gene list.
 - ```v0.2```: annotate with any number of (optional) gene lists.
+
+**TODO**: Generally want to add scripts to the Docker images for each task/workflow instead of having them as WDL inputs, but not a priority.
