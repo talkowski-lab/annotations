@@ -22,7 +22,7 @@ parser.add_argument('--loeuf-v2', dest='loeuf_v2_uri', help='LOEUF scores from g
 parser.add_argument('--loeuf-v4', dest='loeuf_v4_uri', help='LOEUF scores from gnomAD v4.1')
 parser.add_argument('--spliceAI-snv', dest='spliceAI_snv_uri', help='SpliceAI scores SNV HT')
 parser.add_argument('--spliceAI-indel', dest='spliceAI_indel_uri', help='SpliceAI scores Indel HT')
-parser.add_argument('--genes', dest='gene_list', help='OPTIONAL: Gene list txt file')
+parser.add_argument('--genes', dest='gene_list_tsv', help='OPTIONAL: Gene list file, tab-separated "gene_list_name"\t"gene_list_uri"')
 parser.add_argument('--project-id', dest='project_id', help='Google Project ID')
 
 args = parser.parse_args()
@@ -40,7 +40,7 @@ loeuf_v2_uri = args.loeuf_v2_uri
 loeuf_v4_uri = args.loeuf_v4_uri
 spliceAI_snv_uri = args.spliceAI_snv_uri
 spliceAI_indel_uri = args.spliceAI_indel_uri
-gene_list = args.gene_list
+gene_list_tsv = args.gene_list_tsv
 gcp_project = args.project_id
 
 hl.init(min_block_size=128, 
@@ -117,12 +117,16 @@ mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
 csq_fields_str = csq_fields_str + '|'.join([''] + ['OMIM_MIM_number', 'OMIM_inheritance_code'])
 
 # OPTIONAL: annotate with gene list, if provided
-if gene_list!='NA':
-    genes = pd.read_csv(gene_list, sep='\t', header=None)[0].tolist()
-    gene_list_name = os.path.basename(gene_list)
+# for script
+if gene_list_tsv!='NA':
+    gene_list_uris = pd.read_csv(gene_list_tsv, sep='\t', header=None).set_index(0)[1].to_dict()
+    gene_lists = {gene_list_name: pd.read_csv(uri, sep='\t', header=None)[0].tolist() 
+                for gene_list_name, uri in gene_list_uris.items()}
+
     mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
-    transcript_consequences=mt_by_gene.vep.transcript_consequences.annotate(
-        gene_list=hl.if_else(hl.array(genes).contains(mt_by_gene.row_key.SYMBOL), gene_list_name, ''))))
+        transcript_consequences=mt_by_gene.vep.transcript_consequences.annotate(
+            gene_list=hl.str(',').join(hl.array([hl.or_missing(hl.array(gene_list).contains(mt_by_gene.vep.transcript_consequences.SYMBOL), gene_list_name) 
+                for gene_list_name, gene_list in gene_lists.items()]).filter(hl.is_defined)))))
     csq_fields_str = csq_fields_str + '|gene_list'
 
 mt_by_gene = (mt_by_gene.group_rows_by(mt_by_gene.locus, mt_by_gene.alleles)

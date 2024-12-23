@@ -1,5 +1,8 @@
 version 1.0
-    
+
+# CHANGE LOG: 
+# 12/23/2024: added multiple gene list annotations (gene_list_tsv_tsv input) and overall spliceAI_score
+
 import "scatterVCF.wdl" as scatterVCF
 import "mergeSplitVCF.wdl" as mergeSplitVCF
 import "mergeVCFs.wdl" as mergeVCFs
@@ -36,7 +39,7 @@ workflow vepAnnotateHailExtra {
 
         String spliceAI_uri='NA'
         String noncoding_bed='NA'
-        String gene_list='NA'
+        String gene_list_tsv='NA'
 
         RuntimeAttr? runtime_attr_annotate_noncoding      
         RuntimeAttr? runtime_attr_annotate_extra
@@ -67,7 +70,7 @@ workflow vepAnnotateHailExtra {
                 revel_file_idx=revel_file+'.tbi',
                 clinvar_vcf_uri=clinvar_vcf_uri,
                 omim_uri=omim_uri,
-                gene_list=select_first([gene_list, 'NA']),
+                gene_list_tsv=select_first([gene_list_tsv, 'NA']),
                 mpc_ht_uri=mpc_ht_uri,
                 hail_docker=hail_docker,
                 genome_build=genome_build,
@@ -200,7 +203,7 @@ task annotateExtra {
         File clinvar_vcf_uri
         File omim_uri
         
-        String gene_list
+        String gene_list_tsv
         String mpc_ht_uri
 
         String hail_docker
@@ -244,7 +247,7 @@ task annotateExtra {
         python3 annotate.py -i ~{vcf_file} -o ~{vep_annotated_vcf_name} --cores ~{cpu_cores} --mem ~{memory} \
         --build ~{genome_build} --loeuf-v2 ~{loeuf_v2_uri} --loeuf-v4 ~{loeuf_v4_uri} \
         --mpc ~{mpc_ht_uri} --clinvar ~{clinvar_vcf_uri} --omim ~{omim_uri} \
-        --revel ~{revel_file} --genes ~{gene_list} 
+        --revel ~{revel_file} --genes ~{gene_list_tsv} 
         cp $(ls . | grep hail*.log) hail_log.txt
     >>>
 
