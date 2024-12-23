@@ -117,7 +117,6 @@ mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
 csq_fields_str = csq_fields_str + '|'.join([''] + ['OMIM_MIM_number', 'OMIM_inheritance_code'])
 
 # OPTIONAL: annotate with gene list, if provided
-# for script
 if gene_list_tsv!='NA':
     gene_list_uris = pd.read_csv(gene_list_tsv, sep='\t', header=None).set_index(0)[1].to_dict()
     gene_lists = {gene_list_name: pd.read_csv(uri, sep='\t', header=None)[0].tolist() 

@@ -32,7 +32,7 @@ workflow vepAnnotateHailExtra {
         String cohort_prefix
         String hail_docker
         
-        String vep_annotate_hail_extra_python_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_extra_v0.1.py"
+        String vep_annotate_hail_extra_python_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_extra_dev.py"
         String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
 
         String genome_build='GRCh38'
