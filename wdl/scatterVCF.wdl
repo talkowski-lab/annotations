@@ -15,7 +15,7 @@ workflow scatterVCF_workflow {
 
     input {
         File file
-        String split_vcf_hail_script
+        String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
         String cohort_prefix
         String hail_docker
         String sv_base_mini_docker
