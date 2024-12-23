@@ -363,6 +363,14 @@ task annotateSpliceAI {
             **{field: hl.if_else(hl.is_defined(mt_by_locus_and_gene.SpliceAI_raw), 
                                 mt_by_locus_and_gene.SpliceAI_raw.split('=')[1].split('\|')[i+2], '') 
             for i, field in enumerate(fields)}))))
+    # overall SpliceAI score
+    mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(
+        spliceAI_score=hl.max([
+            hl.or_missing(mt_by_locus_and_gene.vep.transcript_consequences[field]!='', 
+                        hl.float(mt_by_locus_and_gene.vep.transcript_consequences[field])) 
+            for field in fields])
+    )    
+    fields = fields + ['spliceAI_score']
     csq_fields_str = 'Format: ' + header['info']['CSQ']['Description'].split('Format: ')[1] + '|'.join([''] + fields)
 
     mt_by_gene = mt_by_locus_and_gene
