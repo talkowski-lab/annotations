@@ -77,7 +77,9 @@ revel_ht = revel_ht.annotate(locus=hl.locus(revel_ht[build_chr], hl.int(revel_ht
 revel_ht = revel_ht.key_by('locus', 'alleles')
 mt = mt.annotate_rows(info=mt.info.annotate(REVEL=revel_ht[mt.row_key].REVEL))
 
-csq_columns = header['info']['CSQ']['Description'].replace('Format: ', '').split('|')
+# expect first field to be Allele, regardless of 'Format: ' (or anything before) being present
+csq_columns = ('Allele' + header['info']['CSQ']['Description'].split('Allele')[-1]).split('|')
+
 # split VEP CSQ string
 mt = mt.annotate_rows(vep=mt.info)
 transcript_consequences = mt.vep.CSQ.map(lambda x: x.split('\|'))
@@ -105,7 +107,6 @@ mt_by_transcript = mt_by_transcript.annotate_rows(vep=mt_by_transcript.vep.annot
         )
     )
 )
-csq_fields_str = 'Format: ' + header['info']['CSQ']['Description'].replace('Format: ', '') + '|'.join(['', 'LOEUF_v2', 'LOEUF_v2_decile', 'LOEUF_v4', 'LOEUF_v4_decile'])
 
 # annotate OMIM
 omim = hl.import_table(omim_uri).key_by('approvedGeneSymbol')
@@ -114,7 +115,6 @@ mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
     transcript_consequences=mt_by_gene.vep.transcript_consequences.annotate(
         OMIM_MIM_number=hl.if_else(hl.is_defined(omim[mt_by_gene.row_key]), omim[mt_by_gene.row_key].mimNumber, ''),
         OMIM_inheritance_code=hl.if_else(hl.is_defined(omim[mt_by_gene.row_key]), omim[mt_by_gene.row_key].inheritance_code, ''))))
-csq_fields_str = csq_fields_str + '|'.join([''] + ['OMIM_MIM_number', 'OMIM_inheritance_code'])
 
 # OPTIONAL: annotate with gene list, if provided
 if gene_list_tsv!='NA':
@@ -126,7 +126,6 @@ if gene_list_tsv!='NA':
         transcript_consequences=mt_by_gene.vep.transcript_consequences.annotate(
             gene_list=hl.str(',').join(hl.array([hl.or_missing(hl.array(gene_list).contains(mt_by_gene.vep.transcript_consequences.SYMBOL), gene_list_name) 
                 for gene_list_name, gene_list in gene_lists.items()]).filter(hl.is_defined)))))
-    csq_fields_str = csq_fields_str + '|gene_list'
 
 mt_by_gene = (mt_by_gene.group_rows_by(mt_by_gene.locus, mt_by_gene.alleles)
     .aggregate_rows(vep = hl.agg.collect(mt_by_gene.vep))).result()
@@ -140,6 +139,9 @@ new_csq = mt_by_gene.vep.transcript_consequences.scan(lambda i, j:
 mt_by_gene = mt_by_gene.annotate_rows(CSQ=new_csq)
 mt = mt.annotate_rows(info=mt.info.annotate(CSQ=mt_by_gene.rows()[mt.row_key].CSQ))
 mt = mt.drop('vep')
+
+# only adds new CSQ fields to header, overwrites if already present
+csq_fields_str = 'Format: ' + '|'.join(fields)
 
 header['info']['CSQ'] = {'Description': csq_fields_str, 'Number': '.', 'Type': 'String'}
 header['info']['REVEL'] = {'Description': 'REVEL scores.', 'Number': '.', 'Type': 'String'}

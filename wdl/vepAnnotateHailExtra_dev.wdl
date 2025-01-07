@@ -339,7 +339,9 @@ task annotateSpliceAI {
     header = hl.get_vcf_metadata(vcf_file) 
     mt = hl.import_vcf(vcf_file, drop_samples=True, force_bgz=True, array_elements_required=False, call_fields=[], reference_genome=build)
 
-    csq_columns = header['info']['CSQ']['Description'].split('Format: ')[1].split('|')
+    # expect first field to be Allele, regardless of 'Format: ' (or anything before) being present
+    csq_columns = ('Allele' + header['info']['CSQ']['Description'].split('Allele')[-1]).split('|')
+    
     # split VEP CSQ string
     mt = mt.annotate_rows(vep=mt.info)
     transcript_consequences = mt.vep.CSQ.map(lambda x: x.split('\|'))
@@ -375,8 +377,6 @@ task annotateSpliceAI {
                             hl.float(mt_by_locus_and_gene.vep.transcript_consequences[field])) 
                 for field in score_fields])))))
     )    
-    fields = fields + ['spliceAI_score']
-    csq_fields_str = 'Format: ' + header['info']['CSQ']['Description'].split('Format: ')[1] + '|'.join([''] + fields)
 
     mt_by_gene = mt_by_locus_and_gene
     mt_by_gene = (mt_by_gene.group_rows_by(mt_by_gene.locus, mt_by_gene.alleles)
@@ -391,6 +391,9 @@ task annotateSpliceAI {
     mt_by_gene = mt_by_gene.annotate_rows(CSQ=new_csq)
     mt = mt.annotate_rows(info=mt.info.annotate(CSQ=mt_by_gene.rows()[mt.row_key].CSQ))
     mt = mt.drop('vep')
+
+    # only adds new CSQ fields to header, overwrites if already present
+    csq_fields_str = 'Format: ' + '|'.join(fields)
 
     header['info']['CSQ'] = {'Description': csq_fields_str, 'Number': '.', 'Type': 'String'}
     hl.export_vcf(dataset=mt, output=vep_annotated_vcf_name, metadata=header, tabix=True)
