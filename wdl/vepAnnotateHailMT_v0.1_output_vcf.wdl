@@ -17,8 +17,7 @@ workflow vepAnnotateHailMT {
 
     input {
         String? mt_uri
-        String vep_annotate_hail_mt_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_mt_v0.1.py"
-        String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
+
         File hg38_fasta
         File hg38_fasta_fai
         File human_ancestor_fa
@@ -26,16 +25,24 @@ workflow vepAnnotateHailMT {
         File top_level_fa
         File gerp_conservation_scores
         File hg38_vep_cache
+
         File loeuf_data
         String bucket_id
+
         String cohort_prefix
         String hail_docker
         String vep_hail_docker
         String sv_base_mini_docker
+
+        String vep_annotate_hail_mt_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_mt_v0.1.py"
+        String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
+
         Boolean split_by_chromosome
         Boolean split_into_shards 
-        Array[String]? mt_shards  # if scatterMT.wdl already run before VEP
         Array[String]? row_fields_to_keep=[false]
+
+        Array[String]? mt_shards  # if scatterMT.wdl already run before VEP
+
         RuntimeAttr? runtime_attr_merge_vcfs
         RuntimeAttr? runtime_attr_vep_annotate
     }
@@ -52,10 +59,10 @@ workflow vepAnnotateHailMT {
     # Array[String] mt_shards_ = select_first([scatterMT.mt_shards, mt_shards])
     Array[String] mt_shards_ = select_first([mt_shards])
 
-    scatter (shard in mt_shards_) {
+    scatter (mt_shard in mt_shards_) {
         call vepAnnotateMT {
             input:
-                mt_uri=shard,
+                mt_uri=mt_shard,
                 vep_annotate_hail_mt_script=vep_annotate_hail_mt_script,
                 top_level_fa=top_level_fa,
                 human_ancestor_fa=human_ancestor_fa,
@@ -78,15 +85,19 @@ workflow vepAnnotateHailMT {
 task vepAnnotateMT {
     input {
         String mt_uri
-        String vep_annotate_hail_mt_script
+
         File top_level_fa
         File human_ancestor_fa
         File human_ancestor_fa_fai
         File gerp_conservation_scores
         File hg38_vep_cache
+
         File loeuf_data
-        String vep_hail_docker
         String bucket_id
+
+        String vep_hail_docker
+        String vep_annotate_hail_mt_script
+        
         RuntimeAttr? runtime_attr_override
     }
 
