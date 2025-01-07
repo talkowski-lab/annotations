@@ -27,14 +27,14 @@ workflow vepAnnotateHailMT {
         File hg38_vep_cache
 
         File loeuf_data
-        String bucket_id
+        String project_id
 
         String cohort_prefix
         String hail_docker
         String vep_hail_docker
         String sv_base_mini_docker
 
-        String vep_annotate_hail_mt_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_mt_v0.1.py"
+        String vep_annotate_hail_mt_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_mt_v0.1_output_vcf.py"
         String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
 
         Boolean split_by_chromosome
@@ -51,7 +51,7 @@ workflow vepAnnotateHailMT {
     #     call scatterMT.scatterMT as scatterMT {
     #         input:
     #             mt_uris=[select_first([mt_uri])],
-    #             bucket_id=bucket_id,
+    #             project_id=project_id,
     #             hail_docker=hail_docker
     #     }
     # }
@@ -71,7 +71,7 @@ workflow vepAnnotateHailMT {
                 hg38_vep_cache=hg38_vep_cache,
                 loeuf_data=loeuf_data,
                 vep_hail_docker=vep_hail_docker,
-                bucket_id=bucket_id,
+                project_id=project_id,
                 runtime_attr_override=runtime_attr_vep_annotate
         }
     }
@@ -93,7 +93,7 @@ task vepAnnotateMT {
         File hg38_vep_cache
 
         File loeuf_data
-        String bucket_id
+        String project_id
 
         String vep_hail_docker
         String vep_annotate_hail_mt_script
@@ -159,7 +159,7 @@ task vepAnnotateMT {
         }' > vep_config.json
 
         curl ~{vep_annotate_hail_mt_script} > vep_annotate.py
-        python3.9 vep_annotate.py ~{mt_uri} ~{bucket_id} ~{cpu_cores} ~{memory}
+        python3.9 vep_annotate.py -i ~{mt_uri} -o ~{project_id} --cores ~{cpu_cores} --mem ~{memory} --project-id ~{project_id}
         cp $(ls . | grep hail*.log) hail_log.txt
     >>>
 
