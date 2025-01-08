@@ -233,7 +233,7 @@ task RemoveRawMutectCalls {
         set -eou pipefail
         # mutect calls are the first sample
         bcftools query -l ~{vcf} | awk 'NR > 1' > samples.txt
-        bcftools view ~{vcf} -S samples.txt -Oz -o ~{prefix}.fm.vcf.gz
+        bcftools view ~{vcf} -S samples.txt --no-update -Oz -o ~{prefix}.fm.vcf.gz
 
     >>>
 
