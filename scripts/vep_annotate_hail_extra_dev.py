@@ -124,7 +124,7 @@ if gene_list_tsv!='NA':
 
     mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
         transcript_consequences=mt_by_gene.vep.transcript_consequences.annotate(
-            gene_list=hl.str(',').join(hl.array([hl.or_missing(hl.array(gene_list).contains(mt_by_gene.vep.transcript_consequences.SYMBOL), gene_list_name) 
+            gene_list=hl.str('&').join(hl.array([hl.or_missing(hl.array(gene_list).contains(mt_by_gene.vep.transcript_consequences.SYMBOL), gene_list_name) 
                 for gene_list_name, gene_list in gene_lists.items()]).filter(hl.is_defined)))))
 
 mt_by_gene = (mt_by_gene.group_rows_by(mt_by_gene.locus, mt_by_gene.alleles)
