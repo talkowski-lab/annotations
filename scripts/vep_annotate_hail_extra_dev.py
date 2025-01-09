@@ -113,7 +113,7 @@ omim = hl.import_table(omim_uri).key_by('approvedGeneSymbol')
 mt_by_gene = mt_by_transcript.key_rows_by(mt_by_transcript.vep.transcript_consequences.SYMBOL)
 mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
     transcript_consequences=mt_by_gene.vep.transcript_consequences.annotate(
-        OMIM_MIM_number=hl.if_else(hl.is_defined(omim[mt_by_gene.row_key]), omim[mt_by_gene.row_key].mimNumber, ''),
+        # OMIM_MIM_number=hl.if_else(hl.is_defined(omim[mt_by_gene.row_key]), omim[mt_by_gene.row_key].mimNumber, ''),
         OMIM_inheritance_code=hl.if_else(hl.is_defined(omim[mt_by_gene.row_key]), omim[mt_by_gene.row_key].inheritance_code, ''))))
 
 # OPTIONAL: annotate with gene list, if provided
