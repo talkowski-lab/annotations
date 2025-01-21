@@ -13,6 +13,10 @@ Each ```v0.x``` is associated with a published Dockstore workflow.
 - Relatively stable. Basically replicates ```vepAnnotateHail_v0.1.wdl``` but expects MT input and saves as MT (**TODO**: maybe output as VCF?).
 - Rarely used, only if we have input in MT form and not VCF(s).
 
+**```vepAnnotateHailHT_v0.1.wdl```**: https://dockstore.org/workflows/github.com/talkowski-lab/annotations/vep-annotate-hail-ht-v01
+- Relatively stable. Basically replicates ```vepAnnotateHail_v0.1.wdl``` but expects HT input and saves as HT.
+- Used for any tabular input (supplementary tables, excel sheets, TSVs, HTs, etc.).
+
 **```vepAnnotateHailNIFS_v0.1.wdl```**: https://dockstore.org/workflows/github.com/talkowski-lab/annotations/vep-annotate-hail-NIFS-v01
 - Main difference with ```vepAnnotateHail_v0.1.wdl``` are the ```RemoveRawMutectCalls``` and ```addHGVScGeneSymbolField``` tasks.
 
