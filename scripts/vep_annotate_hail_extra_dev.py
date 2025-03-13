@@ -119,7 +119,7 @@ mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
 # OPTIONAL: annotate with gene list, if provided
 if gene_list_tsv!='NA':
     gene_list_uris = pd.read_csv(gene_list_tsv, sep='\t', header=None).set_index(0)[1].to_dict()
-    gene_lists = {gene_list_name: pd.read_csv(uri, sep='\t', header=None)[0].tolist() 
+    gene_lists = {gene_list_name: pd.read_csv(uri, header=None)[0].tolist() 
                 for gene_list_name, uri in gene_list_uris.items()}
 
     mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
