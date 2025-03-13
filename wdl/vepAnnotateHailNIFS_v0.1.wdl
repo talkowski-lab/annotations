@@ -409,7 +409,7 @@ task addHGVScGeneSymbolField {
 
         mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
             transcript_consequences=mt_by_gene.vep.transcript_consequences.annotate(
-                HGVSc_symbol= hl.str(', ').join(
+                HGVSc_symbol= hl.str(':').join(
                             hl.array([mt_by_gene.vep.transcript_consequences.SYMBOL, 
                                      hl.if_else(mt_by_gene.vep.transcript_consequences.HGVSc!='', mt_by_gene.vep.transcript_consequences.HGVSc.split(':')[1], hl.missing('str')),
                                      hl.if_else(mt_by_gene.vep.transcript_consequences.HGVSp!='', mt_by_gene.vep.transcript_consequences.HGVSp.split(':')[1], hl.missing('str'))])
