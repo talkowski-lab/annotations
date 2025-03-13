@@ -1,19 +1,19 @@
 #!/bin/sh
-'''
-This script pulls the VCF from the latest GRCh38 ClinVar release at the time of running.
-- Assumes the CHROM field does NOT have the "chr" prefix, even for GRCh38 build
-- Assumes the second line of the VCF follows the format "##fileDate=%Y-%m-%d" for grabbing the release date
-- Requires tabix, gsutil
-'''
+# '''
+# This script pulls the VCF from the latest GRCh38 ClinVar release at the time of running.
+# - Assumes the CHROM field does NOT have the "chr" prefix, even for GRCh38 build
+# - Assumes the second line of the VCF follows the format "##fileDate=%Y-%m-%d" for grabbing the release date
+# - Requires tabix, gsutil
+# '''
 
 wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz
 
 # Get date of release
 date_str=$(date -j -f "%Y-%m-%d" $(cat clinvar.vcf.gz | zcat | head -n 2 | tail -n 1 | cut -d '=' -f 2) "+%Y%m%d")
 
-# Add chr
+# Add chr, replace MT with M
 echo "Adding 'chr' prefix..."
-cat clinvar.vcf.gz | zcat | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | bgzip > clinvar_${date_str}_chr_rename_GRCh38.vcf.gz
+cat clinvar.vcf.gz | zcat | sed 's/MT/M/g' | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | bgzip > clinvar_${date_str}_chr_rename_GRCh38.vcf.gz
 
 # Index
 echo "Indexing using tabix..."
