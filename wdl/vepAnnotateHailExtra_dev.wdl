@@ -360,7 +360,7 @@ task annotateSpliceAI {
     mt_by_locus_and_gene = mt_by_transcript.key_rows_by('locus', 'alleles', mt_by_transcript.vep.transcript_consequences.SYMBOL)
 
     spliceAI_ht = hl.read_table(spliceAI_uri)
-    
+
     # NEW 3/18/2025: comment out SpliceAI score parsing below after updating input SpliceAI HT
     # # leave out ALLELE/SYMBOL because redundant
     # fields = 'ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL'.split('|')[2:]  
@@ -383,7 +383,7 @@ task annotateSpliceAI {
     spliceAI_fields = ['DS_AG','DS_AL','DS_DG','DS_DL','DP_AG','DP_AL','DP_DG','DP_DL','spliceAI_score']
     mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(vep=mt_by_locus_and_gene.vep.annotate(
         transcript_consequences=(mt_by_locus_and_gene.vep.transcript_consequences.annotate(
-            **{field: spliceAI_ht[mt_by_locus_and_gene.row_key][field]})
+            **{field: spliceAI_ht[mt_by_locus_and_gene.row_key][field] for field in spliceAI_fields})
             )
         )
     )
