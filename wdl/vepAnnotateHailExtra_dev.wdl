@@ -2,6 +2,7 @@ version 1.0
 
 # CHANGE LOG: 
 # 12/23/2024: added multiple gene list annotations (gene_list_tsv_tsv input) and overall spliceAI_score
+# 3/18/2025: comment out SpliceAI score parsing below after updating input SpliceAI HT
 
 import "scatterVCF.wdl" as scatterVCF
 import "mergeSplitVCF.wdl" as mergeSplitVCF
