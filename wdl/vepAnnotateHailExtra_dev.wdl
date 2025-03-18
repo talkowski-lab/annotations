@@ -360,23 +360,33 @@ task annotateSpliceAI {
     mt_by_locus_and_gene = mt_by_transcript.key_rows_by('locus', 'alleles', mt_by_transcript.vep.transcript_consequences.SYMBOL)
 
     spliceAI_ht = hl.read_table(spliceAI_uri)
-    # leave out ALLELE/SYMBOL because redundant
-    fields = 'ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL'.split('|')[2:]  
-    mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(SpliceAI_raw=spliceAI_ht[mt_by_locus_and_gene.row_key].SpliceAI)
+    
+    # NEW 3/18/2025: comment out SpliceAI score parsing below after updating input SpliceAI HT
+    # # leave out ALLELE/SYMBOL because redundant
+    # fields = 'ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL'.split('|')[2:]  
+    # mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(SpliceAI_raw=spliceAI_ht[mt_by_locus_and_gene.row_key].SpliceAI)
+    # mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(vep=mt_by_locus_and_gene.vep.annotate(
+    #     transcript_consequences=(mt_by_locus_and_gene.vep.transcript_consequences.annotate(
+    #         **{field: hl.if_else(hl.is_defined(mt_by_locus_and_gene.SpliceAI_raw), 
+    #                             mt_by_locus_and_gene.SpliceAI_raw.split('=')[1].split('\|')[i+2], '') 
+    #         for i, field in enumerate(fields)}))))
+    # # overall SpliceAI score
+    # score_fields = ['DS_AG','DS_AL','DS_DG','DS_DL']
+    # mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(vep=mt_by_locus_and_gene.vep.annotate(
+    #     transcript_consequences=(mt_by_locus_and_gene.vep.transcript_consequences.annotate(
+    #         spliceAI_score=hl.str(hl.max([
+    #             hl.or_missing(mt_by_locus_and_gene.vep.transcript_consequences[field]!='', 
+    #                         hl.float(mt_by_locus_and_gene.vep.transcript_consequences[field])) 
+    #             for field in score_fields])))))
+    # )    
+
+    spliceAI_fields = ['DS_AG','DS_AL','DS_DG','DS_DL','DP_AG','DP_AL','DP_DG','DP_DL','spliceAI_score']
     mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(vep=mt_by_locus_and_gene.vep.annotate(
         transcript_consequences=(mt_by_locus_and_gene.vep.transcript_consequences.annotate(
-            **{field: hl.if_else(hl.is_defined(mt_by_locus_and_gene.SpliceAI_raw), 
-                                mt_by_locus_and_gene.SpliceAI_raw.split('=')[1].split('\|')[i+2], '') 
-            for i, field in enumerate(fields)}))))
-    # overall SpliceAI score
-    score_fields = ['DS_AG','DS_AL','DS_DG','DS_DL']
-    mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(vep=mt_by_locus_and_gene.vep.annotate(
-        transcript_consequences=(mt_by_locus_and_gene.vep.transcript_consequences.annotate(
-            spliceAI_score=hl.str(hl.max([
-                hl.or_missing(mt_by_locus_and_gene.vep.transcript_consequences[field]!='', 
-                            hl.float(mt_by_locus_and_gene.vep.transcript_consequences[field])) 
-                for field in score_fields])))))
-    )    
+            **{field: spliceAI_ht[mt_by_locus_and_gene.row_key][field]})
+            )
+        )
+    )
 
     mt_by_gene = mt_by_locus_and_gene
     mt_by_gene = (mt_by_gene.group_rows_by(mt_by_gene.locus, mt_by_gene.alleles)
