@@ -380,7 +380,8 @@ task annotateSpliceAI {
     #                         hl.float(mt_by_locus_and_gene.vep.transcript_consequences[field])) 
     #             for field in score_fields])))))
     # )    
-
+    
+    # NEW 3/19/2025: hl.if_else for if spliceAI is defined for speeding up annotations
     spliceAI_fields = ['DS_AG','DS_AL','DS_DG','DS_DL','DP_AG','DP_AL','DP_DG','DP_DL','spliceAI_score']
     mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(vep=mt_by_locus_and_gene.vep.annotate(
         transcript_consequences=(mt_by_locus_and_gene.vep.transcript_consequences.annotate(
