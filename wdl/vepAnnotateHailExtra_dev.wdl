@@ -385,7 +385,7 @@ task annotateSpliceAI {
     spliceAI_fields = ['DS_AG','DS_AL','DS_DG','DS_DL','DP_AG','DP_AL','DP_DG','DP_DL','spliceAI_score']
     mt_by_locus_and_gene = mt_by_locus_and_gene.annotate_rows(vep=mt_by_locus_and_gene.vep.annotate(
         transcript_consequences=(mt_by_locus_and_gene.vep.transcript_consequences.annotate(
-                **{field: hl.if_else(hl.is_defined(spliceAI_ht[mt_by_locus_and_gene.row_key].spliceAI),
+                **{field: hl.if_else(hl.is_defined(spliceAI_ht[mt_by_locus_and_gene.row_key].SpliceAI),
                         spliceAI_ht[mt_by_locus_and_gene.row_key][field], '') 
                 for field in spliceAI_fields})
             )
