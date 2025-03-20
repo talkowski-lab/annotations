@@ -102,7 +102,7 @@ task annotateCADD {
     # Annotate CADD
     ht = hl.read_table(ht_uri)
     ht = ht.annotate(CADD_raw_score=cadd_ht[ht.locus, ht.alleles].raw_score,
-                              CADD_PHRED_score=cadd_ht[ht.locus, ht.alleles].PHRED_score)
+                    CADD_PHRED_score=cadd_ht[ht.locus, ht.alleles].PHRED_score)
     ht.write(output_uri, overwrite=True)
 
     EOF
