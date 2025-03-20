@@ -98,6 +98,9 @@ task annotateCADD {
     mem = int(np.floor(float(args.mem)))
     build = args.build
 
+    BILLING_PROJECT_ID = os.environ['WORKSPACE_NAMESPACE']
+    print(BILLING_PROJECT_ID)
+
     hl.init(default_reference=build,
             min_block_size=128, 
             local=f"local[*]", 
@@ -106,6 +109,7 @@ task annotateCADD {
                         "spark.speculation": 'true'
                         }, 
             tmp_dir="tmp", local_tmpdir="tmp",
+            gcs_requester_pays_configuration=BILLING_PROJECT_ID
     )
     cadd_ht = hl.read_table(cadd_ht_uri)
 
