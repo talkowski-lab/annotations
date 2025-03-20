@@ -15,7 +15,7 @@ workflow AnnotateCADD {
         String output_uri
 
         String hail_docker
-        String region='us'
+        String cadd_ht_uri
         String genome_build='GRCh38'
     }
 
@@ -23,7 +23,7 @@ workflow AnnotateCADD {
         input:
         ht_uri=ht_uri,
         output_uri=output_uri,
-        region=region,
+        cadd_ht_uri=cadd_ht_uri,
         hail_docker=hail_docker,
         genome_build=genome_build
     }
@@ -39,7 +39,7 @@ task annotateCADD {
         String output_uri
 
         String hail_docker
-        String region
+        String cadd_ht_uri
         String genome_build='GRCh38'
         RuntimeAttr? runtime_attr_override
     }
@@ -84,7 +84,7 @@ task annotateCADD {
     parser = argparse.ArgumentParser(description='Parse arguments')
     parser.add_argument('-i', dest='ht_uri', help='Input HT')
     parser.add_argument('-o', dest='output_uri', help='Output URI')
-    parser.add_argument('-r', dest='region', help='Region (us or us-central1, etc.)')    
+    parser.add_argument('-c', dest='cadd_ht_uri', help='URI for CADD HT')    
     parser.add_argument('--cores', dest='cores', help='CPU cores')
     parser.add_argument('--mem', dest='mem', help='Memory')
     parser.add_argument('--build', dest='build', help='Genome build')
@@ -107,9 +107,8 @@ task annotateCADD {
                         }, 
             tmp_dir="tmp", local_tmpdir="tmp",
     )
-    cadd_version = '1.6' if build=='GRCh38' else '1.4'
-    cadd_ht = hl.experimental.load_dataset(name='CADD', version=cadd_version, reference_genome=build,
-                                region=region, cloud='gcp')
+    cadd_ht = hl.read_table(cadd_ht_uri)
+
     # Annotate CADD
     ht = hl.read_table(ht_uri)
     ht = ht.annotate(CADD_raw_score=cadd_ht[ht.locus, ht.alleles].raw_score,
@@ -118,7 +117,7 @@ task annotateCADD {
 
     EOF
 
-    python3 annotateCADD.py -i ~{ht_uri} -o ~{output_uri} -r ~{region} --cores ~{cpu_cores} --mem ~{memory} --build ~{genome_build}
+    python3 annotateCADD.py -i ~{ht_uri} -o ~{output_uri} -c ~{cadd_ht_uri} --cores ~{cpu_cores} --mem ~{memory} --build ~{genome_build}
     >>>
 
     output {
