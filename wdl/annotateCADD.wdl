@@ -68,8 +68,14 @@ task annotateCADD {
 
     command <<<
     cat <<EOF > annotateCADD.py
+    from pyspark.sql import SparkSession
     import hail as hl
+    import numpy as np
+    import pandas as pd
+    import sys
+    import ast
     import os
+    import json
     import argparse
 
     parser = argparse.ArgumentParser(description='Parse arguments')
