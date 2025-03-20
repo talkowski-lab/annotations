@@ -93,7 +93,7 @@ task annotateCADD {
 
     ht_uri = args.ht_uri
     output_uri = args.output_uri
-    region = args.region
+    cadd_ht_uri = args.cadd_ht_uri
     cores = args.cores  # string
     mem = int(np.floor(float(args.mem)))
     build = args.build
