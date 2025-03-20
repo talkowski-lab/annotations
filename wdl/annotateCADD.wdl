@@ -13,6 +13,7 @@ workflow AnnotateCADD {
     input {
         String ht_uri
         String output_uri
+        String BILLING_PROJECT_ID
 
         String hail_docker
         String cadd_ht_uri
@@ -25,7 +26,8 @@ workflow AnnotateCADD {
         output_uri=output_uri,
         cadd_ht_uri=cadd_ht_uri,
         hail_docker=hail_docker,
-        genome_build=genome_build
+        genome_build=genome_build,
+        BILLING_PROJECT_ID=BILLING_PROJECT_ID
     }
 
     output {
@@ -37,6 +39,7 @@ task annotateCADD {
     input {
         String ht_uri
         String output_uri
+        String BILLING_PROJECT_ID
 
         String hail_docker
         String cadd_ht_uri
@@ -88,6 +91,7 @@ task annotateCADD {
     parser.add_argument('--cores', dest='cores', help='CPU cores')
     parser.add_argument('--mem', dest='mem', help='Memory')
     parser.add_argument('--build', dest='build', help='Genome build')
+    parser.add_argument('--BILLING_PROJECT_ID', dest='BILLING_PROJECT_ID', help='BILLING_PROJECT_ID')
 
     args = parser.parse_args()
 
@@ -97,9 +101,7 @@ task annotateCADD {
     cores = args.cores  # string
     mem = int(np.floor(float(args.mem)))
     build = args.build
-
-    BILLING_PROJECT_ID = os.environ['WORKSPACE_NAMESPACE']
-    print(BILLING_PROJECT_ID)
+    BILLING_PROJECT_ID = args.BILLING_PROJECT_ID
 
     hl.init(default_reference=build,
             min_block_size=128, 
@@ -121,7 +123,8 @@ task annotateCADD {
 
     EOF
 
-    python3 annotateCADD.py -i ~{ht_uri} -o ~{output_uri} -c ~{cadd_ht_uri} --cores ~{cpu_cores} --mem ~{memory} --build ~{genome_build}
+    python3 annotateCADD.py -i ~{ht_uri} -o ~{output_uri} -c ~{cadd_ht_uri} --cores ~{cpu_cores} --mem ~{memory} \
+        --build ~{genome_build} --BILLING_PROJECT_ID ~{BILLING_PROJECT_ID}
     >>>
 
     output {
