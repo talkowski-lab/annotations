@@ -25,7 +25,7 @@ workflow vepAnnotateHailExtra {
 
         File revel_file
         File clinvar_vcf_uri
-        File omim_uri
+        File inheritance_uri
         String mpc_ht_uri
         String loeuf_v2_uri
         String loeuf_v4_uri
@@ -71,7 +71,7 @@ workflow vepAnnotateHailExtra {
                 revel_file=revel_file,
                 revel_file_idx=revel_file+'.tbi',
                 clinvar_vcf_uri=clinvar_vcf_uri,
-                omim_uri=omim_uri,
+                inheritance_uri=inheritance_uri,
                 gene_list_tsv=select_first([gene_list_tsv, 'NA']),
                 mpc_ht_uri=mpc_ht_uri,
                 hail_docker=hail_docker,
@@ -204,7 +204,7 @@ task annotateExtra {
         File revel_file
         File revel_file_idx
         File clinvar_vcf_uri
-        File omim_uri
+        File inheritance_uri
         
         String gene_list_tsv
         String mpc_ht_uri
@@ -249,7 +249,7 @@ task annotateExtra {
         curl ~{vep_annotate_hail_extra_python_script} > annotate.py
         python3 annotate.py -i ~{vcf_file} -o ~{vep_annotated_vcf_name} --cores ~{cpu_cores} --mem ~{memory} \
         --build ~{genome_build} --loeuf-v2 ~{loeuf_v2_uri} --loeuf-v4 ~{loeuf_v4_uri} \
-        --mpc ~{mpc_ht_uri} --clinvar ~{clinvar_vcf_uri} --omim ~{omim_uri} \
+        --mpc ~{mpc_ht_uri} --clinvar ~{clinvar_vcf_uri} --inheritance ~{inheritance_uri} \
         --revel ~{revel_file} --genes ~{gene_list_tsv} 
         cp $(ls . | grep hail*.log) hail_log.txt
     >>>
