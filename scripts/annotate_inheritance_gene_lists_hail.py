@@ -55,21 +55,22 @@ transcript_consequences_strs = transcript_consequences.map(lambda x: hl.if_else(
 mt = mt.annotate_rows(vep=mt.vep.annotate(transcript_consequences=transcript_consequences_strs))
 mt = mt.annotate_rows(vep=mt.vep.select('transcript_consequences'))
 
-# Explode rows and key by transcript
+# explode rows and key by transcript
 mt_by_transcript = mt.explode_rows(mt.vep.transcript_consequences)
 mt_by_transcript = mt_by_transcript.key_rows_by(mt_by_transcript.vep.transcript_consequences.Feature)
 
-# Annotate inheritance_code
+# annotate inheritance_code
 inheritance_ht = hl.import_table(inheritance_uri).key_by('approvedGeneSymbol')
 mt_by_gene = mt_by_transcript.key_rows_by(mt_by_transcript.vep.transcript_consequences.SYMBOL)
 mt_by_gene = mt_by_gene.annotate_rows(vep=mt_by_gene.vep.annotate(
     transcript_consequences=mt_by_gene.vep.transcript_consequences.annotate(
-        inheritance_ht_inheritance_code=hl.if_else(hl.is_defined(inheritance_ht[mt_by_gene.row_key]), inheritance_ht[mt_by_gene.row_key].inheritance_code, '')
+        inheritance_code=hl.if_else(hl.is_defined(inheritance_ht[mt_by_gene.row_key]), inheritance_ht[mt_by_gene.row_key].inheritance_code, ''),
+        genCC_classification=hl.if_else(hl.is_defined(inheritance_ht[mt_by_gene.row_key]), inheritance_ht[mt_by_gene.row_key].genCC_classification, '')
         )
     )
 )
 
-# OPTIONAL: Annotate with gene list(s)
+# OPTIONAL: annotate with gene list(s)
 if gene_list_tsv!='NA':
     gene_list_uris = pd.read_csv(gene_list_tsv, sep='\t', header=None).set_index(0)[1].to_dict()
     gene_lists = {gene_list_name: pd.read_csv(uri, header=None)[0].tolist() 
