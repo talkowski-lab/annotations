@@ -23,24 +23,15 @@ workflow AnnotateInheritanceGeneLists {
     input {
         Array[File] vep_vcf_files
         
-        File revel_file
-        File clinvar_vcf_uri
         File inheritance_uri
-        String mpc_ht_uri
-        String loeuf_v2_uri
-        String loeuf_v4_uri
 
         String cohort_prefix
         String hail_docker
         
         String annotate_inheritance_gene_lists_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/eren_dev/scripts/vep_annotate_hail_extra_dev.py"
-        String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
-        String annotate_spliceAI_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/eren_dev/scripts/annotate_spliceAI_hail.py"
         
         String genome_build='GRCh38'
 
-        String spliceAI_uri='NA'
-        String noncoding_bed='NA'
         String gene_list_tsv='NA'
         String? prefix  # optional prefix, for if filenames get too long
 
