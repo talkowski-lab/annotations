@@ -28,7 +28,7 @@ workflow AnnotateInheritanceGeneLists {
         String cohort_prefix
         String hail_docker
         
-        String annotate_inheritance_gene_lists_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/eren_dev/scripts/vep_annotate_hail_extra_dev.py"
+        String annotate_inheritance_gene_lists_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/eren_dev/scripts/annotate_inheritance_gene_lists_hail.py"
         
         String genome_build='GRCh38'
 
