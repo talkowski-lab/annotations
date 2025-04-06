@@ -65,8 +65,14 @@ if build=='GRCh38':
                             reference_genome='GRCh38',
                             force_bgz=clinvar_vcf_uri.split('.')[-1] in ['gz', 'bgz'],
                             skip_invalid_loci=True)
+    # Grab ClinVar header
+    clinvar_header = hl.get_vcf_metadata(clinvar_vcf_uri)
     mt = mt.annotate_rows(info = mt.info.annotate(CLNSIG=clinvar_vcf.rows()[mt.row_key].info.CLNSIG,
-                                                  CLNREVSTAT=clinvar_vcf.rows()[mt.row_key].info.CLNREVSTAT))
+                                                  CLNREVSTAT=clinvar_vcf.rows()[mt.row_key].info.CLNREVSTAT),
+                                                  CLNSIGCONF=clinvar_vcf.rows()[mt.row_key].info.CLNSIGCONF)
+    # TODO: add ClinVar fields to annotate as input to workflow instead of being hardcoded?
+    for clinvar_field in ['CLNSIG', 'CLNREVSTAT', 'CLNSIGCONF']:
+        header['info'][clinvar_field] = clinvar_header['info'][clinvar_field]
 
 # annotate REVEL
 revel_ht = hl.import_table(revel_file, force_bgz=True)
