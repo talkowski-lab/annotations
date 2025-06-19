@@ -18,7 +18,7 @@ struct RuntimeAttr {
     Int? max_retries
 }
 
-workflow AnnotateInheritanceGeneLists {
+workflow AnnotateClinVar {
 
     input {
         Array[File] vep_vcf_files
