@@ -7,6 +7,7 @@ import ast
 import os
 import json
 import argparse
+import datetime
 
 parser = argparse.ArgumentParser(description='Parse arguments')
 parser.add_argument('-i', dest='vcf_file', help='Input VCF file')
@@ -45,13 +46,19 @@ if build=='GRCh38':
                             reference_genome='GRCh38',
                             force_bgz=clinvar_vcf_uri.split('.')[-1] in ['gz', 'bgz'],
                             skip_invalid_loci=True)
+    # NEW 6/19/2025: Grab ClinVar version from path (assumes "clinvar_{clinvar_build}..." format) for adding to header
+    clinvar_build = os.path.basename(clinvar_vcf_uri).split('_')[1]
+    clinvar_build = datetime.datetime.strptime(clinvar_build, "%Y%m%d").strftime("%m-%d-%Y")
     # Grab ClinVar header
     clinvar_header = hl.get_vcf_metadata(clinvar_vcf_uri)
+    # NEW 6/19/2025: Annotate specific fields from ClinVar using clinvar_fields input
     mt = mt.annotate_rows(info = mt.info.annotate(**{clinvar_field: 
                                                      clinvar_vcf.rows()[mt.row_key].info[clinvar_field]
                                                      for clinvar_field in clinvar_fields}))
 
     for clinvar_field in clinvar_fields:
-        header['info'][clinvar_field] = clinvar_header['info'][clinvar_field]
+        clinvar_field_header = clinvar_header['info'][clinvar_field]
+        clinvar_field_header['Description'] = clinvar_field_header['Description'] + f" [ClinVar build: {clinvar_build}]"
+        header['info'][clinvar_field] = clinvar_field_header
 
 hl.export_vcf(dataset=mt, output=vep_annotated_vcf_name, metadata=header, tabix=True)
