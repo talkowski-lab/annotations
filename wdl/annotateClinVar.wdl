@@ -23,7 +23,7 @@ workflow AnnotateClinVar {
     input {
         Array[File] vep_vcf_files
         
-        File clinvar_uri
+        File clinvar_vcf_uri
         Array[String] clinvar_fields = ['CLNSIG', 'CLNREVSTAT', 'CLNSIGCONF', 'GENEINFO']
 
         String cohort_prefix
@@ -49,7 +49,7 @@ workflow AnnotateClinVar {
             input:
                 vcf_file=vcf_shard,
                 annotate_clinvar_script=annotate_clinvar_script,
-                clinvar_uri=clinvar_uri,
+                clinvar_vcf_uri=clinvar_vcf_uri,
                 clinvar_fields=clinvar_fields,
                 hail_docker=hail_docker,
                 genome_build=genome_build,
@@ -76,7 +76,7 @@ workflow AnnotateClinVar {
 task annotateClinVar {
     input {
         File vcf_file
-        File clinvar_uri
+        File clinvar_vcf_uri
         Array[String] clinvar_fields
 
         String hail_docker
@@ -118,7 +118,7 @@ task annotateClinVar {
     command <<<
         curl ~{annotate_clinvar_script} > annotate.py
         python3 annotate.py -i ~{vcf_file} -o ~{vep_annotated_vcf_name} --cores ~{cpu_cores} --mem ~{memory} \
-        --build ~{genome_build} --clinvar ~{clinvar_uri} --clinvar-fields ~{sep=',' clinvar_fields} 
+        --build ~{genome_build} --clinvar ~{clinvar_vcf_uri} --clinvar-fields ~{sep=',' clinvar_fields} 
         cp $(ls . | grep hail*.log) hail_log.txt
     >>>
 
