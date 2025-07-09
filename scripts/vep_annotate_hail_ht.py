@@ -139,7 +139,7 @@ ht_by_gene = (ht_by_gene.group_by(ht_by_gene.locus, ht_by_gene.alleles)
 
 fields = [''] + list(ht_by_gene.vep.transcript_consequences[0])
 # only adds new CSQ fields to header, overwrites if already present
-csq_fields_str = hl.eval(ht.vep_csq_header) + '|'.join(fields)
+csq_fields_str = 'Format: ' + '|'.join(fields)
 
 ht = ht.annotate(vep=hl.Struct(**{'transcript_consequences': ht_by_gene[ht.key].transcript_consequences}))
 ht = ht.drop('vep_csq_header')
