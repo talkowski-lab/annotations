@@ -17,7 +17,7 @@ struct RuntimeAttr {
 workflow vepAnnotateHail {
 
     input {
-        File? vcf_file
+        File vcf_file
 
         File ref_fasta
         File ref_fasta_fai
@@ -40,168 +40,73 @@ workflow vepAnnotateHail {
         String cohort_prefix
         String hail_docker
         String vep_hail_docker
-        String sv_base_mini_docker
+        String pyro_docker
         
         String vep_annotate_hail_python_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_v0.1.py"
         String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
 
         String genome_build='GRCh38'
-        Boolean split_by_chromosome
-        Boolean split_into_shards 
-        Boolean merge_split_vcf
-        Boolean reannotate_ac_af=false
-        Int shards_per_chunk=10  # combine pre-sharded VCFs
+        Boolean reannotate_ac_af=false        
         
-        Array[File]? vcf_shards  # if scatterVCF.wdl already run before VEP
-        
-        RuntimeAttr? runtime_attr_merge_vcfs
+        RuntimeAttr? runtime_attr_split_multi
         RuntimeAttr? runtime_attr_vep_annotate
         RuntimeAttr? runtime_attr_annotate_add_genotypes
     }
 
-    if (defined(vcf_shards)) {
-        String file_ = select_first([select_first([vcf_shards])[0]])
-    }
-    String file = select_first([file_, vcf_file])
-
-    # input is not a single VCF file, so merge shards in chunks, then run VEP on merged chunks
-    if (merge_split_vcf) { 
-        # combine pre-sharded VCFs into chunks
-        call mergeSplitVCF.splitFile as splitFile {
-            input:
-                file=file,
-                shards_per_chunk=shards_per_chunk,
-                cohort_prefix=cohort_prefix,
-                hail_docker=vep_hail_docker
-        }
-        scatter (chunk_file in splitFile.chunks) {
-            call mergeVCFs.mergeVCFs as mergeVCFs {
-                input:
-                    vcf_files=read_lines(chunk_file),
-                    sv_base_mini_docker=sv_base_mini_docker,
-                    cohort_prefix=basename(chunk_file),
-                    runtime_attr_override=runtime_attr_merge_vcfs
-            }
-            
-            call RemoveRawMutectCalls as RemoveRawMutectCallsMergedShards {
-                input:
-                vcf=mergeVCFs.merged_vcf_file,
-                sv_base_mini_docker=sv_base_mini_docker
-            }
-
-            call vepAnnotate as vepAnnotateMergedShards {
-                input:
-                    vcf_file=RemoveRawMutectCallsMergedShards.out,
-                    vep_annotate_hail_python_script=vep_annotate_hail_python_script,
-                    top_level_fa=top_level_fa,
-                    # human_ancestor_fa=human_ancestor_fa,
-                    # human_ancestor_fa_fai=human_ancestor_fa_fai,
-                    # gerp_conservation_scores=gerp_conservation_scores,
-                    ref_vep_cache=ref_vep_cache,
-                    alpha_missense_file=alpha_missense_file,
-                    alpha_missense_file_idx=alpha_missense_file+'.tbi',
-                    eve_data=eve_data,
-                    eve_data_idx=eve_data+'.tbi',
-                    vep_hail_docker=vep_hail_docker,
-                    reannotate_ac_af=reannotate_ac_af,
-                    genome_build=genome_build,
-                    runtime_attr_override=runtime_attr_vep_annotate
-            }
-
-            call addHGVScGeneSymbolField as addHGVScGeneSymbolFieldMergedShards {
-                input:
-                vcf_file=vepAnnotateMergedShards.vep_vcf_file,
-                genome_build=genome_build,
-                vep_hail_docker=vep_hail_docker,
-                runtime_attr_override=runtime_attr_vep_annotate
-            }
-
-            call helpers.addGenotypes as addGenotypesMergedShards {
-                input:
-                annot_vcf_file=addHGVScGeneSymbolFieldMergedShards.output_vcf,
-                vcf_file=RemoveRawMutectCallsMergedShards.out,
-                hail_docker=hail_docker,
-                genome_build=genome_build,
-                runtime_attr_override=runtime_attr_annotate_add_genotypes
-            }
-        }
+    call SplitMultiallelicMutect {
+        input:
+            vcf=vcf_file,
+            pyro_docker=pyro_docker,
+            runtime_attr_override=runtime_attr_split_multi
     }
 
-    if (!merge_split_vcf) {
-        if (!defined(vcf_shards)) {
-            call scatterVCF.scatterVCF_workflow as scatterVCF {
-                input:
-                    file=file,
-                    split_vcf_hail_script=split_vcf_hail_script,
-                    cohort_prefix=cohort_prefix,
-                    genome_build=genome_build,
-                    hail_docker=hail_docker,
-                    sv_base_mini_docker=sv_base_mini_docker,
-                    split_by_chromosome=split_by_chromosome,
-                    split_into_shards=split_into_shards,
-            }
-        }
-        Array[File] vcf_shards_ = select_first([scatterVCF.vcf_shards, vcf_shards])
-    
-        scatter (vcf_shard in vcf_shards_) {
-            call RemoveRawMutectCalls {
-                input:
-                vcf=vcf_shard,
-                sv_base_mini_docker=sv_base_mini_docker
-            }
-
-            call vepAnnotate {
-                input:
-                    vcf_file=RemoveRawMutectCalls.out,
-                    vep_annotate_hail_python_script=vep_annotate_hail_python_script,
-                    top_level_fa=top_level_fa,
-                    # human_ancestor_fa=human_ancestor_fa,
-                    # human_ancestor_fa_fai=human_ancestor_fa_fai,
-                    # gerp_conservation_scores=gerp_conservation_scores,
-                    ref_vep_cache=ref_vep_cache,
-                    alpha_missense_file=alpha_missense_file,
-                    alpha_missense_file_idx=alpha_missense_file+'.tbi',
-                    eve_data=eve_data,
-                    eve_data_idx=eve_data+'.tbi',
-                    vep_hail_docker=vep_hail_docker,
-                    reannotate_ac_af=reannotate_ac_af,
-                    genome_build=genome_build,
-                    runtime_attr_override=runtime_attr_vep_annotate
-            }
-
-            call addHGVScGeneSymbolField {
-                input:
-                    vcf_file=vepAnnotate.vep_vcf_file,
-                    genome_build=genome_build,
-                    vep_hail_docker=vep_hail_docker,
-                    runtime_attr_override=runtime_attr_vep_annotate
-            }
-
-            call helpers.addGenotypes as addGenotypes {
-                input:
-                annot_vcf_file=addHGVScGeneSymbolField.output_vcf,
-                vcf_file=RemoveRawMutectCalls.out,
-                hail_docker=hail_docker,
-                genome_build=genome_build,
-                runtime_attr_override=runtime_attr_annotate_add_genotypes
-            }
-
-        }
+    call vepAnnotate as vepAnnotate {
+        input:
+            vcf_file=SplitMultiallelicMutect.output_vcf,
+            vep_annotate_hail_python_script=vep_annotate_hail_python_script,
+            top_level_fa=top_level_fa,
+            # human_ancestor_fa=human_ancestor_fa,
+            # human_ancestor_fa_fai=human_ancestor_fa_fai,
+            # gerp_conservation_scores=gerp_conservation_scores,
+            ref_vep_cache=ref_vep_cache,
+            alpha_missense_file=alpha_missense_file,
+            alpha_missense_file_idx=alpha_missense_file+'.tbi',
+            eve_data=eve_data,
+            eve_data_idx=eve_data+'.tbi',
+            vep_hail_docker=vep_hail_docker,
+            reannotate_ac_af=reannotate_ac_af,
+            genome_build=genome_build,
+            runtime_attr_override=runtime_attr_vep_annotate
     }
 
-    Array[File] vep_vcf_files_ = select_first([addGenotypesMergedShards.combined_vcf_file, addGenotypes.combined_vcf_file])
-    Array[File] vep_vcf_idx_ = select_first([addGenotypesMergedShards.combined_vcf_idx, addGenotypes.combined_vcf_idx])
+    call addHGVScGeneSymbolField as addHGVScGeneSymbolField {
+        input:
+        vcf_file=vepAnnotate.vep_vcf_file,
+        genome_build=genome_build,
+        vep_hail_docker=vep_hail_docker,
+        runtime_attr_override=runtime_attr_vep_annotate
+    }
+
+    call helpers.addGenotypes as addGenotypes {
+        input:
+        annot_vcf_file=addHGVScGeneSymbolField.output_vcf,
+        vcf_file=SplitMultiallelicMutect.output_vcf,
+        hail_docker=hail_docker,
+        genome_build=genome_build,
+        runtime_attr_override=runtime_attr_annotate_add_genotypes
+    }
 
     output {
-        Array[File] vep_vcf_files = vep_vcf_files_
-        Array[File] vep_vcf_idx = vep_vcf_idx_
+        File vep_vcf_file = addGenotypes.combined_vcf_file
+        File vep_vcf_idx = addGenotypes.combined_vcf_idx
     }
 }   
 
-task RemoveRawMutectCalls {
+task SplitMultiallelicMutect {
     input {
         File vcf
-        String sv_base_mini_docker
+        String pyro_docker
+        RuntimeAttr? runtime_attr_override
     }
 
     RuntimeAttr runtime_default = object {
@@ -225,20 +130,17 @@ task RemoveRawMutectCalls {
         cpu: cpu_cores
         preemptible: select_first([runtime_override.preemptible_tries, runtime_default.preemptible_tries])
         maxRetries: select_first([runtime_override.max_retries, runtime_default.max_retries])
-        docker: sv_base_mini_docker
+        docker: pyro_docker
         bootDiskSizeGb: select_first([runtime_override.boot_disk_gb, runtime_default.boot_disk_gb])
     }
 
     command <<<
         set -eou pipefail
-        # mutect calls are the first sample
-        bcftools query -l ~{vcf} | awk 'NR > 1' > samples.txt
-        bcftools view ~{vcf} -S samples.txt --no-update -Oz -o ~{prefix}.fm.vcf.gz
-
+        bcftools norm -m- --keep-sum AD ~{vcf} | bcftools +setGT -- -t a -n c:'M/m' | bgzip > ~{prefix}.multi.split.vcf.gz
     >>>
 
     output {
-        File out = "~{prefix}.fm.vcf.gz"
+        File output_vcf = "~{prefix}.multi.split.vcf.gz"
     }
 }
 
