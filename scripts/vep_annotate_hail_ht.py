@@ -14,7 +14,8 @@ parser.add_argument('-i', dest='ht_uri', help='Input HT')
 parser.add_argument('--bucket-id', dest='bucket_id', help='Bucket ID')
 parser.add_argument('--cores', dest='cores', help='CPU cores')
 parser.add_argument('--mem', dest='mem', help='Memory')
-parser.add_argument('--mpc', dest='mpc_ht_uri', help='MPC scores HT')
+parser.add_argument('--mpc-v1', dest='mpc_v1_ht_uri', help='MPC scores HT (v1)')
+parser.add_argument('--mpc-v2', dest='mpc_v2_ht_uri', help='MPC scores HT (v2)')
 parser.add_argument('--clinvar', dest='clinvar_vcf_uri', help='ClinVar VCF')
 parser.add_argument('--inheritance', dest='inheritance_uri', help='File with inheritance codes (expected columns: approvedGeneSymbol, inheritance_code, genCC_classification)')
 parser.add_argument('--revel', dest='revel_file', help='REVEL file')
@@ -32,7 +33,8 @@ cores = args.cores  # string
 mem = int(np.floor(float(args.mem)))
 build = args.build
 gcp_project = args.project_id
-mpc_ht_uri = args.mpc_ht_uri
+mpc_v1_ht_uri = args.mpc_v1_ht_uri
+mpc_v2_ht_uri = args.mpc_v2_ht_uri
 clinvar_vcf_uri = args.clinvar_vcf_uri
 inheritance_uri = args.inheritance_uri
 revel_file = args.revel_file
@@ -58,11 +60,12 @@ ht = hl.read_table(ht_uri)
 # run VEP
 ht = hl.vep(ht, config='vep_config.json', csq=True, tolerate_parse_error=True)
 
-## TODO: set up after VEP finished
 # FROM EXTRA
 # annotate MPC
-mpc = hl.read_table(mpc_ht_uri).key_by('locus','alleles')
-ht = ht.annotate(MPC=mpc[ht.locus, ht.alleles].mpc)
+mpc_v1 = hl.read_table(mpc_v1_ht_uri).key_by('locus','alleles')
+ht = ht.annotate(MPC_v1=mpc_v1[ht.locus, ht.alleles].mpc)
+mpc_v2 = hl.read_table(mpc_v2_ht_uri).key_by('locus','alleles')
+ht = ht.annotate(MPC_v2=mpc_v2[ht.locus, ht.alleles].mpc)
         
 # annotate ClinVar
 if build=='GRCh38':
