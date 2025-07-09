@@ -118,8 +118,8 @@ inheritance_ht = hl.import_table(inheritance_uri).key_by('approvedGeneSymbol')
 ht_by_gene = ht_by_transcript.key_by(ht_by_transcript.vep.transcript_consequences.SYMBOL)
 ht_by_gene = ht_by_gene.annotate(vep=ht_by_gene.vep.annotate(
     transcript_consequences=ht_by_gene.vep.transcript_consequences.annotate(    
-        inheritance_code=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.row_key]), inheritance_ht[ht_by_gene.row_key].inheritance_code, ''),
-        genCC_classification=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.row_key]), inheritance_ht[ht_by_gene.row_key].genCC_classification, '')
+        inheritance_code=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.key]), inheritance_ht[ht_by_gene.key].inheritance_code, ''),
+        genCC_classification=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.key]), inheritance_ht[ht_by_gene.key].genCC_classification, '')
         )
     )
 )
