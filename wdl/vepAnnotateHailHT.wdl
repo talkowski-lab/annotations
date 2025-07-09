@@ -31,7 +31,7 @@ workflow vepAnnotateHail {
         String loeuf_v4_uri
         File revel_file
         File clinvar_vcf_uri
-        File omim_uri
+        File inheritance_uri
         
         String gene_list='NA'
         String mpc_ht_uri
@@ -62,7 +62,7 @@ workflow vepAnnotateHail {
         revel_file=revel_file,
         revel_file_idx=revel_file+'.tbi',
         clinvar_vcf_uri=clinvar_vcf_uri,
-        omim_uri=omim_uri,
+        inheritance_uri=inheritance_uri,
         gene_list=select_first([gene_list, 'NA']),
         mpc_ht_uri=mpc_ht_uri
     }
@@ -99,7 +99,7 @@ task vepAnnotate {
         File revel_file
         File revel_file_idx
         File clinvar_vcf_uri
-        File omim_uri
+        File inheritance_uri
         
         String gene_list
         String mpc_ht_uri
@@ -166,7 +166,7 @@ task vepAnnotate {
         proj_id=$(gcloud config get-value project)
         python3.9 vep_annotate.py -i ~{ht_uri} --bucket-id ~{bucket_id} --cores ~{cpu_cores} --mem ~{memory} \
         --build ~{genome_build} --project-id $proj_id --loeuf-v2 ~{loeuf_v2_uri} --loeuf-v4 ~{loeuf_v4_uri} \
-        --mpc ~{mpc_ht_uri} --clinvar ~{clinvar_vcf_uri} --omim ~{omim_uri} \
+        --mpc ~{mpc_ht_uri} --clinvar ~{clinvar_vcf_uri} --inheritance ~{inheritance_uri} \
         --revel ~{revel_file} --genes ~{gene_list} 
         cp $(ls . | grep hail*.log) hail_log.txt
     >>>

@@ -16,7 +16,7 @@ parser.add_argument('--cores', dest='cores', help='CPU cores')
 parser.add_argument('--mem', dest='mem', help='Memory')
 parser.add_argument('--mpc', dest='mpc_ht_uri', help='MPC scores HT')
 parser.add_argument('--clinvar', dest='clinvar_vcf_uri', help='ClinVar VCF')
-parser.add_argument('--omim', dest='omim_uri', help='OMIM file')
+parser.add_argument('--inheritance', dest='inheritance_uri', help='File with inheritance codes (expected columns: approvedGeneSymbol, inheritance_code, genCC_classification)')
 parser.add_argument('--revel', dest='revel_file', help='REVEL file')
 parser.add_argument('--loeuf-v2', dest='loeuf_v2_uri', help='LOEUF scores from gnomAD v2.1.1')
 parser.add_argument('--loeuf-v4', dest='loeuf_v4_uri', help='LOEUF scores from gnomAD v4.1')
@@ -34,7 +34,7 @@ build = args.build
 gcp_project = args.project_id
 mpc_ht_uri = args.mpc_ht_uri
 clinvar_vcf_uri = args.clinvar_vcf_uri
-omim_uri = args.omim_uri
+inheritance_uri = args.inheritance_uri
 revel_file = args.revel_file
 loeuf_v2_uri = args.loeuf_v2_uri
 loeuf_v4_uri = args.loeuf_v4_uri
@@ -109,17 +109,17 @@ ht_by_transcript = ht_by_transcript.annotate(vep=ht_by_transcript.vep.annotate(
         )
     )
 )
-csq_fields_str = hl.eval(ht.vep_csq_header) + '|'.join(['', 'LOEUF_v2', 'LOEUF_v2_decile', 'LOEUF_v4', 'LOEUF_v4_decile'])
 
-# annotate OMIM
-omim = hl.import_table(omim_uri).key_by('approvedGeneSymbol')
+# annotate inheritance_code
+inheritance_ht = hl.import_table(inheritance_uri).key_by('approvedGeneSymbol')
 ht_by_gene = ht_by_transcript.key_by(ht_by_transcript.vep.transcript_consequences.SYMBOL)
 ht_by_gene = ht_by_gene.annotate(vep=ht_by_gene.vep.annotate(
     transcript_consequences=ht_by_gene.vep.transcript_consequences.annotate(    
-    OMIM_MIM_number=hl.if_else(hl.is_defined(omim[ht_by_gene.key]), omim[ht_by_gene.key].mimNumber, ''),
-    OMIM_inheritance_code=hl.if_else(hl.is_defined(omim[ht_by_gene.key]), omim[ht_by_gene.key].inheritance_code, '')))
+        inheritance_code=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.row_key]), inheritance_ht[ht_by_gene.row_key].inheritance_code, ''),
+        genCC_classification=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.row_key]), inheritance_ht[ht_by_gene.row_key].genCC_classification, '')
+        )
+    )
 )
-csq_fields_str = csq_fields_str + '|'.join([''] + ['OMIM_MIM_number', 'OMIM_inheritance_code'])
 
 # OPTIONAL: annotate with gene list, if provided
 if gene_list!='NA':
@@ -129,11 +129,14 @@ if gene_list!='NA':
     transcript_consequences=ht_by_gene.vep.transcript_consequences.annotate(    
         gene_list=hl.if_else(hl.array(genes).contains(ht_by_gene.key.SYMBOL), gene_list_name, '')))
     )
-    csq_fields_str = csq_fields_str + '|gene_list'
 
 # EDITED
 ht_by_gene = (ht_by_gene.group_by(ht_by_gene.locus, ht_by_gene.alleles)
     .aggregate(transcript_consequences = hl.agg.collect(ht_by_gene.vep.transcript_consequences)))
+
+fields = [''] + list(ht_by_gene.vep.transcript_consequences[0])
+# only adds new CSQ fields to header, overwrites if already present
+csq_fields_str = hl.eval(ht.vep_csq_header) + '|'.join(fields)
 
 ht = ht.annotate(vep=hl.Struct(**{'transcript_consequences': ht_by_gene[ht.key].transcript_consequences}))
 ht = ht.drop('vep_csq_header')
