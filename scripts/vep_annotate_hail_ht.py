@@ -71,7 +71,8 @@ ht = ht.annotate(MPC_v2=mpc_v2[ht.locus, ht.alleles].mpc)
 if build=='GRCh38':
     clinvar_vcf = hl.import_vcf(clinvar_vcf_uri,
                             reference_genome='GRCh38',
-                            force_bgz=clinvar_vcf_uri.split('.')[-1] in ['gz', 'bgz'])
+                            force_bgz=clinvar_vcf_uri.split('.')[-1] in ['gz', 'bgz'],
+                            skip_invalid_loci=True)
     ht = ht.annotate(CLNSIG=clinvar_vcf.rows()[ht.key].info.CLNSIG,
                                                   CLNREVSTAT=clinvar_vcf.rows()[ht.key].info.CLNREVSTAT)
 
