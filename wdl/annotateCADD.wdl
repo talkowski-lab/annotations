@@ -123,7 +123,7 @@ task annotateCADD {
     
     prefix = os.path.basename(ht_uri).split('.ht')[0]
     output_uri = f"{bucket_id}/hail/{str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))}/{prefix}.CADD.ht"
-    pd.Series([filename]).to_csv('ht_uri.txt', index=False, header=None)
+    pd.Series([output_uri]).to_csv('ht_uri.txt', index=False, header=None)
     ht.write(output_uri, overwrite=True)
 
     EOF
