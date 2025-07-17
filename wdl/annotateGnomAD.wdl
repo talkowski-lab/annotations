@@ -119,8 +119,8 @@ task annotateGnomAD {
             tmp_dir="tmp", local_tmpdir="tmp",
             gcs_requester_pays_configuration=BILLING_PROJECT_ID
     )
-    gnomADg_ht = hl.read_table(gnomADg_ht_uri)
-    gnomADe_ht = hl.read_table(gnomADe_ht_uri)
+    gnomadg_ht = hl.read_table(gnomADg_ht_uri)
+    gnomade_ht = hl.read_table(gnomADe_ht_uri)
 
     # Annotate GnomAD
     ht = hl.read_table(ht_uri)
