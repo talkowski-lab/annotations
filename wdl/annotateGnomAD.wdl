@@ -136,7 +136,7 @@ task annotateGnomAD {
 
     EOF
 
-    python3 annotategnomADg.py -i ~{ht_uri} --bucket_id ~{bucket_id} -g ~{gnomADg_ht_uri} -e {gnomADe_ht_uri} \
+    python3 annotategnomADg.py -i ~{ht_uri} --bucket_id ~{bucket_id} -g ~{gnomADg_ht_uri} -e ~{gnomADe_ht_uri} \
         --cores ~{cpu_cores} --mem ~{memory} --build ~{genome_build} --BILLING_PROJECT_ID ~{BILLING_PROJECT_ID}
     >>>
 
