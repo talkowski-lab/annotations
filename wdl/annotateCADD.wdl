@@ -12,7 +12,7 @@ struct RuntimeAttr {
 workflow AnnotateCADD {
     input {
         String ht_uri
-        String output_uri
+        String bucket_id
         String BILLING_PROJECT_ID
 
         String hail_docker
@@ -23,7 +23,7 @@ workflow AnnotateCADD {
     call annotateCADD {
         input:
         ht_uri=ht_uri,
-        output_uri=output_uri,
+        bucket_id=bucket_id,
         cadd_ht_uri=cadd_ht_uri,
         hail_docker=hail_docker,
         genome_build=genome_build,
@@ -38,7 +38,7 @@ workflow AnnotateCADD {
 task annotateCADD {
     input {
         String ht_uri
-        String output_uri
+        String bucket_id
         String BILLING_PROJECT_ID
 
         String hail_docker
@@ -83,11 +83,12 @@ task annotateCADD {
     import os
     import json
     import argparse
+    import datetime
 
     parser = argparse.ArgumentParser(description='Parse arguments')
     parser.add_argument('-i', dest='ht_uri', help='Input HT')
-    parser.add_argument('-o', dest='output_uri', help='Output URI')
     parser.add_argument('-c', dest='cadd_ht_uri', help='URI for CADD HT')    
+    parser.add_argument('--bucket_id', dest='bucket_id', help='Bucket ID')
     parser.add_argument('--cores', dest='cores', help='CPU cores')
     parser.add_argument('--mem', dest='mem', help='Memory')
     parser.add_argument('--build', dest='build', help='Genome build')
@@ -96,7 +97,7 @@ task annotateCADD {
     args = parser.parse_args()
 
     ht_uri = args.ht_uri
-    output_uri = args.output_uri
+    bucket_id = args.bucket_id
     cadd_ht_uri = args.cadd_ht_uri
     cores = args.cores  # string
     mem = int(np.floor(float(args.mem)))
@@ -119,15 +120,19 @@ task annotateCADD {
     ht = hl.read_table(ht_uri)
     ht = ht.annotate(CADD_raw_score=cadd_ht[ht.locus, ht.alleles].raw_score,
                     CADD_PHRED_score=cadd_ht[ht.locus, ht.alleles].PHRED_score)
+    
+    prefix = os.path.basename(ht_uri).split('.ht')[0]
+    output_uri = f"{bucket_id}/hail/{str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))}/{prefix}.CADD.ht"
+    pd.Series([filename]).to_csv('ht_uri.txt', index=False, header=None)
     ht.write(output_uri, overwrite=True)
 
     EOF
 
-    python3 annotateCADD.py -i ~{ht_uri} -o ~{output_uri} -c ~{cadd_ht_uri} --cores ~{cpu_cores} --mem ~{memory} \
+    python3 annotateCADD.py -i ~{ht_uri} --bucket_id ~{bucket_id} -c ~{cadd_ht_uri} --cores ~{cpu_cores} --mem ~{memory} \
         --build ~{genome_build} --BILLING_PROJECT_ID ~{BILLING_PROJECT_ID}
     >>>
 
     output {
-        String output_ht = output_uri
+        String output_ht = read_lines('ht_uri.txt')[0]
     }
 }
