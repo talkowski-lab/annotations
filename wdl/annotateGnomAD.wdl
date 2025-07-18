@@ -119,15 +119,35 @@ task annotateGnomAD {
             tmp_dir="tmp", local_tmpdir="tmp",
             gcs_requester_pays_configuration=BILLING_PROJECT_ID
     )
-    gnomadg_ht = hl.read_table(gnomADg_ht_uri)
-    gnomade_ht = hl.read_table(gnomADe_ht_uri)
 
-    # Annotate GnomAD
+    # Start with small ht
     ht = hl.read_table(ht_uri)
-    ht = ht.annotate(gnomADe_AC=gnomade_ht[ht.key].freq.AC,
-            gnomADe_AN=gnomade_ht[ht.key].freq.AN,
-            gnomADg_AC=gnomadg_ht[ht.key].freq.AC,
-            gnomADg_AN=gnomadg_ht[ht.key].freq.AN)
+
+    # First annotate gnomADe
+    gnomade_ht = hl.read_table(gnomADe_ht_uri).select('freq')
+    gnomade_annot = gnomade_ht.annotate(tmp=ht[gnomade_ht.key])
+    gnomade_annot = gnomade_annot.filter(hl.is_defined(gnomade_annot.tmp))
+    gnomade_annot = gnomade_annot.select(
+        key=gnomade_annot.key,
+        gnomADe_AC=gnomade_annot.freq.AC,
+        gnomADe_AN=gnomade_annot.freq.AN
+    )
+
+    # Join back with original ht
+    ht = ht.annotate(**gnomade_annot[ht.key])
+
+    # Now do the same for gnomADg
+    gnomadg_ht = hl.read_table(gnomADg_ht_uri).select('freq')
+    gnomadg_annot = gnomadg_ht.annotate(tmp=ht[gnomadg_ht.key])
+    gnomadg_annot = gnomadg_annot.filter(hl.is_defined(gnomadg_annot.tmp))
+    gnomadg_annot = gnomadg_annot.select(
+        key=gnomadg_annot.key,
+        gnomADg_AC=gnomadg_annot.freq.AC,
+        gnomADg_AN=gnomadg_annot.freq.AN
+    )
+
+    # Final annotate to add both sets
+    ht = ht.annotate(**gnomadg_annot[ht.key])
 
     prefix = os.path.basename(ht_uri).split('.ht')[0]
     output_uri = f"{bucket_id}/hail/{str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))}/{prefix}.gnomAD_AC_AN.ht"
