@@ -121,7 +121,7 @@ task annotateGnomAD {
     )
 
     # Start with small ht
-    ht = hl.read_table(ht_uri)
+    ht = hl.read_table(ht_uri).repartition(200)
 
     # First annotate gnomADe
     gnomade_ht = hl.read_table(gnomADe_ht_uri).select('freq')
