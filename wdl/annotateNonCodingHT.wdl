@@ -127,7 +127,7 @@ task annotateHTFromBed {
     ht.write(filename)    
     EOF
     python3 annotate_noncoding.py -i ~{ht_uri} --bucket-id ~{bucket_id} --cores ~{cpu_cores} --mem ~{memory} \
-        --noncoding ~{noncoding_bed} --build ~[genome_build]
+        --noncoding ~{noncoding_bed} --build ~{genome_build}
     >>>
 
     output {
