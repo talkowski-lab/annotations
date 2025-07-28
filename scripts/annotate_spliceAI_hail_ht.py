@@ -68,7 +68,7 @@ fields = 'ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL'.split('
 ht_by_locus_and_gene = ht_by_locus_and_gene.annotate(
     SpliceAI_raw=hl.or_missing(
         has_splice_var, 
-        spliceAI_ht[ht_by_locus_and_gene.row_key].SpliceAI
+        spliceAI_ht[ht_by_locus_and_gene.key].SpliceAI
     )
 )
 
