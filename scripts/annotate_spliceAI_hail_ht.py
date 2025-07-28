@@ -47,16 +47,6 @@ hl.init(min_block_size=128,
 
 ht = hl.read_table(ht_uri)
 
-# split VEP CSQ string
-transcript_consequences = ht.vep.map(lambda x: x.split('\|'))
-
-csq_columns = hl.eval(ht.vep_csq_header).split('Format: ')[1].split('|')
-transcript_consequences_strs = transcript_consequences.map(lambda x: hl.if_else(hl.len(x)>1, hl.struct(**
-                                                       {col: x[i] if col!='Consequence' else x[i].split('&')  
-                                                        for i, col in enumerate(csq_columns)}), 
-                                                        hl.struct(**{col: hl.missing('str') if col!='Consequence' else hl.array([hl.missing('str')])  
-                                                        for i, col in enumerate(csq_columns)})))
-
 # annotate SpliceAI scores
 ht_by_transcript = ht.explode(ht.vep.transcript_consequences)
 ht_by_locus_and_gene = ht_by_transcript.key_by('locus', 'alleles', ht_by_transcript.vep.transcript_consequences.SYMBOL)
