@@ -39,7 +39,6 @@ task annotateSpliceAI {
     input {
         String ht_uri
         String bucket_id
-        String BILLING_PROJECT_ID
 
         String hail_docker
         String spliceAI_uri
