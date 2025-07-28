@@ -21,7 +21,7 @@ import datetime
 
 parser = argparse.ArgumentParser(description='Parse arguments')
 parser.add_argument('-i', dest='ht_uri', help='Input HT URI')
-parser.add_argument('--bucket-id', dest='bucket_id', help='Bucket ID')
+parser.add_argument('--bucket_id', dest='bucket_id', help='Bucket ID')
 parser.add_argument('--cores', dest='cores', help='CPU cores')
 parser.add_argument('--mem', dest='mem', help='Memory')
 parser.add_argument('--build', dest='build', help='Genome build')
