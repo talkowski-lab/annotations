@@ -48,7 +48,7 @@ hl.init(min_block_size=128,
 ht = hl.read_table(ht_uri)
 
 # split VEP CSQ string
-transcript_consequences = ht.vep.CSQ.map(lambda x: x.split('\|'))
+transcript_consequences = ht.vep.map(lambda x: x.split('\|'))
 
 csq_columns = hl.eval(ht.vep_csq_header).split('Format: ')[1].split('|')
 transcript_consequences_strs = transcript_consequences.map(lambda x: hl.if_else(hl.len(x)>1, hl.struct(**
