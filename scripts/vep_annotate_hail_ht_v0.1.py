@@ -109,7 +109,6 @@ ht_by_transcript = ht_by_transcript.annotate(vep=ht_by_transcript.vep.annotate(
         )
     )
 )
-csq_fields_str = hl.eval(ht.vep_csq_header) + '|'.join(['', 'LOEUF_v2', 'LOEUF_v2_decile', 'LOEUF_v4', 'LOEUF_v4_decile'])
 
 # annotate OMIM
 omim = hl.import_table(omim_uri).key_by('approvedGeneSymbol')
@@ -119,7 +118,6 @@ ht_by_gene = ht_by_gene.annotate(vep=ht_by_gene.vep.annotate(
     OMIM_MIM_number=hl.if_else(hl.is_defined(omim[ht_by_gene.key]), omim[ht_by_gene.key].mimNumber, ''),
     OMIM_inheritance_code=hl.if_else(hl.is_defined(omim[ht_by_gene.key]), omim[ht_by_gene.key].inheritance_code, '')))
 )
-csq_fields_str = csq_fields_str + '|'.join([''] + ['OMIM_MIM_number', 'OMIM_inheritance_code'])
 
 # OPTIONAL: annotate with gene list, if provided
 if gene_list!='NA':
@@ -129,7 +127,6 @@ if gene_list!='NA':
     transcript_consequences=ht_by_gene.vep.transcript_consequences.annotate(    
         gene_list=hl.if_else(hl.array(genes).contains(ht_by_gene.key.SYMBOL), gene_list_name, '')))
     )
-    csq_fields_str = csq_fields_str + '|gene_list'
 
 # EDITED
 ht_by_gene = (ht_by_gene.group_by(ht_by_gene.locus, ht_by_gene.alleles)
@@ -137,7 +134,6 @@ ht_by_gene = (ht_by_gene.group_by(ht_by_gene.locus, ht_by_gene.alleles)
 
 ht = ht.annotate(vep=hl.Struct(**{'transcript_consequences': ht_by_gene[ht.key].transcript_consequences}))
 ht = ht.drop('vep_csq_header')
-ht = ht.annotate(vep_csq_header=csq_fields_str)
 
 prefix = os.path.basename(ht_uri).split('.ht')[0]
 filename = f"{bucket_id}/hail/{str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))}/{prefix}.vep.ht"
