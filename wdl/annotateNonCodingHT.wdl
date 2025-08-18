@@ -117,7 +117,6 @@ task annotateHTFromBed {
                         "spark.driver.memory": f"{int(np.floor(mem*0.4))}g"
                         }, tmp_dir="tmp", local_tmpdir="tmp")
 
-    # Import BED as interval-keyed table
     bed = hl.import_bed(
         noncoding_bed,
         reference_genome=build,
@@ -125,18 +124,10 @@ task annotateHTFromBed {
     )
 
     ht = hl.read_table(ht_uri)
-
-    # Interval join: keep all overlaps
-    joined = bed.join(ht, how="inner")
-
-    # Group back to original ht rows, collecting all targets that overlap
-    agg = (
-        joined.group_by(joined.row_key)
-            .aggregate(PREDICTED_NONCODING=hl.agg.collect_as_set(joined.target))
+    
+    ht = ht.annotate(
+        PREDICTED_NONCODING = bed.index(ht.locus, all_matches=True).target
     )
-
-    # Annotate back onto original ht
-    ht = ht.annotate(PREDICTED_NONCODING=agg[ht.key].PREDICTED_NONCODING)
 
     prefix = os.path.basename(ht_uri).split('.ht')[0]
     filename = f"{bucket_id}/hail/{str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))}/{prefix}.noncoding.ht"
