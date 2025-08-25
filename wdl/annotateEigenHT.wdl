@@ -107,7 +107,12 @@ task annotateEigenHT {
     build = args.build
     eigen_uri = args.eigen_uri
 
-    hl.init(min_block_size=128, tmp_dir="tmp", local_tmpdir="tmp", default_reference=build)
+    hl.init(min_block_size=128, 
+            local=f"local[*]", 
+            spark_conf={
+                "spark.driver.memory": f"{int(np.floor(mem*0.8))}g"
+            }, 
+            tmp_dir="tmp", local_tmpdir="tmp", default_reference=build)
 
     eigen_ht = hl.read_table(eigen_uri)
     ht = hl.read_table(ht_uri)
