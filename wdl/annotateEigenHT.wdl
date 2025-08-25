@@ -113,7 +113,7 @@ task annotateEigenHT {
     ht = hl.read_table(ht_uri)
     
     eigen_fields = ['Eigen-raw', 'Eigen-phred', 'Eigen-PC-raw', 'Eigen-PC-phred']
-    ht = ht.annotate(**{eigen_field: eigen_ht[ht.key][eigen_field] for eigen_field in eigen_fields})
+    ht = ht.annotate(**{eigen_field: hl.float(eigen_ht[ht.key][eigen_field]) for eigen_field in eigen_fields})
 
     prefix = os.path.basename(ht_uri).split('.ht')[0]
     filename = f"{bucket_id}/hail/{str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))}/{prefix}.Eigen.ht"
