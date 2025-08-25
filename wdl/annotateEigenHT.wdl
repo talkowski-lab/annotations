@@ -98,12 +98,16 @@ task annotateEigenHT {
     parser.add_argument('-i', dest='ht_uri', help='Input HT')
     parser.add_argument('--bucket-id', dest='bucket_id', help='Bucket ID')
     parser.add_argument('--eigen-uri', dest='eigen_uri', help='Noncoding BED file')
+    parser.add_argument('--cores', dest='cores', help='CPU cores')
+    parser.add_argument('--mem', dest='mem', help='Memory')
     parser.add_argument('--build', dest='build', help='Genome build')
 
     args = parser.parse_args()
 
     ht_uri = args.ht_uri
     bucket_id = args.bucket_id
+    cores = args.cores  # string
+    mem = int(np.floor(float(args.mem)))
     build = args.build
     eigen_uri = args.eigen_uri
 
@@ -125,7 +129,7 @@ task annotateEigenHT {
     pd.Series([filename]).to_csv('ht_uri.txt', index=False, header=None)
     ht.write(filename)    
     EOF
-    python3 annotate_noncoding.py -i ~{ht_uri} --bucket-id ~{bucket_id} \
+    python3 annotate_noncoding.py -i ~{ht_uri} --bucket-id ~{bucket_id} --cores ~{cpu_cores} --mem ~{memory} \
         --eigen-uri ~{eigen_uri} --build ~{genome_build}
     >>>
 
