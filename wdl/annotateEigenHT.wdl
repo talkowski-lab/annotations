@@ -11,11 +11,11 @@ struct RuntimeAttr {
     Int? max_retries
 }
 
-workflow annotateNonCoding {
+workflow AnnotateEigenHT {
     input {
         String ht_uri
         String bucket_id
-        File noncoding_bed
+        String eigen_uri
 
         String genome_build='GRCh38'
         String hail_docker        
@@ -27,29 +27,29 @@ workflow annotateNonCoding {
             hail_docker=hail_docker
     }
     
-    call annotateHTFromBed {
+    call annotateEigenHT {
         input:
         ht_uri=ht_uri,
+        eigen_uri=eigen_uri,
         bucket_id=bucket_id,
         genome_build=genome_build,
-        noncoding_bed=noncoding_bed,
         hail_docker=hail_docker,
         ht_size=getInputHTSize.mt_size
     }
 
     output {
-        String output_ht = annotateHTFromBed.output_ht
+        String output_ht = annotateEigenHT.output_ht
     }
 }
 
-task annotateHTFromBed {
+task annotateEigenHT {
     input {
         String ht_uri
+        String eigen_uri
         String bucket_id
         String genome_build
         String hail_docker
 
-        File noncoding_bed
         Float ht_size
         RuntimeAttr? runtime_attr_override
     }
@@ -97,45 +97,31 @@ task annotateHTFromBed {
     parser = argparse.ArgumentParser(description='Parse arguments')
     parser.add_argument('-i', dest='ht_uri', help='Input HT')
     parser.add_argument('--bucket-id', dest='bucket_id', help='Bucket ID')
-    parser.add_argument('--cores', dest='cores', help='CPU cores')
-    parser.add_argument('--mem', dest='mem', help='Memory')
-    parser.add_argument('--noncoding', dest='noncoding_bed', help='Noncoding BED file')
+    parser.add_argument('--eigen-uri', dest='eigen_uri', help='Noncoding BED file')
     parser.add_argument('--build', dest='build', help='Genome build')
 
     args = parser.parse_args()
 
     ht_uri = args.ht_uri
     bucket_id = args.bucket_id
-    cores = args.cores  # string
-    mem = int(np.floor(float(args.mem)))
     build = args.build
-    noncoding_bed = args.noncoding_bed
+    eigen_uri = args.eigen_uri
 
-    hl.init(min_block_size=128, spark_conf={"spark.executor.cores": cores, 
-                        "spark.executor.memory": f"{int(np.floor(mem*0.4))}g",
-                        "spark.driver.cores": cores,
-                        "spark.driver.memory": f"{int(np.floor(mem*0.4))}g"
-                        }, tmp_dir="tmp", local_tmpdir="tmp")
+    hl.init(min_block_size=128, tmp_dir="tmp", local_tmpdir="tmp", default_reference=build)
 
-    bed = hl.import_bed(
-        noncoding_bed,
-        reference_genome=build,
-        skip_invalid_intervals=True
-    )
-
+    eigen_ht = hl.read_table(eigen_uri)
     ht = hl.read_table(ht_uri)
     
-    ht = ht.annotate(
-        PREDICTED_NONCODING = bed.index(ht.locus, all_matches=True).target
-    )
+    eigen_fields = ['Eigen-raw', 'Eigen-phred', 'Eigen-PC-raw', 'Eigen-PC-phred']
+    ht = ht.annotate(**{eigen_field: eigen_ht[ht.key][eigen_field] for eigen_field in eigen_fields})
 
     prefix = os.path.basename(ht_uri).split('.ht')[0]
-    filename = f"{bucket_id}/hail/{str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))}/{prefix}.noncoding.ht"
+    filename = f"{bucket_id}/hail/{str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))}/{prefix}.Eigen.ht"
     pd.Series([filename]).to_csv('ht_uri.txt', index=False, header=None)
     ht.write(filename)    
     EOF
-    python3 annotate_noncoding.py -i ~{ht_uri} --bucket-id ~{bucket_id} --cores ~{cpu_cores} --mem ~{memory} \
-        --noncoding ~{noncoding_bed} --build ~{genome_build}
+    python3 annotate_noncoding.py -i ~{ht_uri} --bucket-id ~{bucket_id} \
+        --eigen-uri ~{eigen_uri} --build ~{genome_build}
     >>>
 
     output {
