@@ -78,6 +78,7 @@ workflow vepAnnotateHailExtra {
                 mpc_ht_uri=mpc_ht_uri,
                 hail_docker=hail_docker,
                 genome_build=genome_build,
+                clinvar_fields=clinvar_fields,
                 runtime_attr_override=runtime_attr_annotate_extra
         }
 
