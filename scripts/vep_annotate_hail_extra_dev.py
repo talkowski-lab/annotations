@@ -72,10 +72,9 @@ if build=='GRCh38':
     clinvar_build = datetime.datetime.strptime(clinvar_build, "%Y%m%d").strftime("%m-%d-%Y")
     # Grab ClinVar header
     clinvar_header = hl.get_vcf_metadata(clinvar_vcf_uri)
-    mt = mt.annotate_rows(info = mt.info.annotate(CLNSIG=clinvar_vcf.rows()[mt.row_key].info.CLNSIG,
-                                                  CLNREVSTAT=clinvar_vcf.rows()[mt.row_key].info.CLNREVSTAT,
-                                                  CLNSIGCONF=clinvar_vcf.rows()[mt.row_key].info.CLNSIGCONF)
-                                                  )
+    mt = mt.annotate_rows(info = mt.info.annotate(**{clinvar_field: 
+                                                     clinvar_vcf.rows()[mt.row_key].info[clinvar_field]
+                                                     for clinvar_field in clinvar_fields}))
     for clinvar_field in clinvar_fields:
         clinvar_field_header = clinvar_header['info'][clinvar_field]
         clinvar_field_header['Description'] = clinvar_field_header['Description'] + f" [ClinVar build: {clinvar_build}]"
