@@ -54,7 +54,8 @@ ht_by_locus_and_gene = ht_by_transcript.key_by('locus', 'alleles', ht_by_transcr
 spliceAI_ht = hl.read_table(spliceAI_uri)
 
 # NEW 3/20/2025: limit SpliceAI annotations to only sites with splice variants
-splice_vars = ['splice_donor_5th_base_variant', 'splice_region_variant', 'splice_donor_region_variant']
+# NEW 9/24/2025: updated splice variant consequences to include all splice
+splice_vars = ['splice_acceptor_variant', 'splice_donor_variant', 'splice_donor_5th_base_variant', 'splice_region_variant', 'splice_donor_region_variant', 'splice_polypyrimidine_tract_variant']
 
 has_splice_var = (
     hl.set(splice_vars)
