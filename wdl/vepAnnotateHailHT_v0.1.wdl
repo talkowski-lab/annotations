@@ -24,6 +24,7 @@ workflow vepAnnotateHail {
 
         String vep_hail_docker
         String genome_build='GRCh38'
+        String python_version='python3.9'
         String vep_annotate_hail_ht_python_script
 
         # from extra
@@ -94,6 +95,7 @@ task vepAnnotate {
         String vep_hail_docker
         String genome_build
         String vep_annotate_hail_ht_python_script
+        String python_version
 
         # from extra
         String loeuf_v2_uri
@@ -167,7 +169,7 @@ task vepAnnotate {
 
         curl ~{vep_annotate_hail_ht_python_script} > vep_annotate.py
         proj_id=$(gcloud config get-value project)
-        python3.9 vep_annotate.py -i ~{ht_uri} --bucket-id ~{bucket_id} --cores ~{cpu_cores} --mem ~{memory} \
+        ~{python_version} vep_annotate.py -i ~{ht_uri} --bucket-id ~{bucket_id} --cores ~{cpu_cores} --mem ~{memory} \
         --build ~{genome_build} --project-id $proj_id --loeuf-v2 ~{loeuf_v2_uri} --loeuf-v4 ~{loeuf_v4_uri} \
         --mpc-v1 ~{mpc_v1_ht_uri} --mpc-v2 ~{mpc_v2_ht_uri} --clinvar ~{clinvar_vcf_uri} --inheritance ~{inheritance_uri} \
         --revel ~{revel_file} --genes ~{gene_list} 

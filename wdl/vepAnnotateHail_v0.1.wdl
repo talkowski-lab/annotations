@@ -35,6 +35,7 @@ workflow vepAnnotateHail {
         String vep_hail_docker
         String sv_base_mini_docker
         
+        String python_version='python3.9'
         String vep_annotate_hail_python_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_v0.1.py"
         String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
 
@@ -134,6 +135,7 @@ workflow vepAnnotateHail {
                     eve_data_idx=eve_data+'.tbi',
                     vep_hail_docker=vep_hail_docker,
                     reannotate_ac_af=reannotate_ac_af,
+                    python_version=python_version,
                     genome_build=genome_build,
                     runtime_attr_override=runtime_attr_vep_annotate
             }
@@ -175,6 +177,7 @@ task vepAnnotate {
         String genome_build
         String vep_annotate_hail_python_script
         Boolean reannotate_ac_af
+        String python_version
         RuntimeAttr? runtime_attr_override
     }
 
@@ -240,7 +243,7 @@ task vepAnnotate {
 
         curl ~{vep_annotate_hail_python_script} > vep_annotate.py
         proj_id=$(gcloud config get-value project)
-        python3.9 vep_annotate.py -i ~{vcf_file} -o ~{vep_annotated_vcf_name} --cores ~{cpu_cores} --mem ~{memory} \
+        ~{python_version} vep_annotate.py -i ~{vcf_file} -o ~{vep_annotated_vcf_name} --cores ~{cpu_cores} --mem ~{memory} \
         --reannotate-ac-af ~{reannotate_ac_af} --build ~{genome_build} --project-id $proj_id
         cp $(ls . | grep hail*.log) hail_log.txt
         bcftools index -t ~{vep_annotated_vcf_name}
