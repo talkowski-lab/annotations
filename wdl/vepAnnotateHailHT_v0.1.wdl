@@ -25,6 +25,7 @@ workflow vepAnnotateHail {
         String vep_hail_docker
         String genome_build='GRCh38'
         String python_version='python3.9'
+        String vep_path='/opt/vep/ensembl-vep/vep'
         String vep_annotate_hail_ht_python_script
 
         # from extra
@@ -58,6 +59,7 @@ workflow vepAnnotateHail {
         eve_data_idx=eve_data+'.tbi',
         vep_hail_docker=vep_hail_docker,
         genome_build=genome_build,
+        vep_path=vep_path,
         python_version=python_version,
         vep_annotate_hail_ht_python_script=vep_annotate_hail_ht_python_script,
         loeuf_v2_uri=loeuf_v2_uri,
@@ -97,6 +99,7 @@ task vepAnnotate {
         String genome_build
         String vep_annotate_hail_ht_python_script
         String python_version
+        String vep_path
 
         # from extra
         String loeuf_v2_uri
@@ -145,7 +148,7 @@ task vepAnnotate {
         tar xzf ~{ref_vep_cache} -C $dir_cache
 
         echo '{"command": [
-        "/opt/vep/ensembl-vep/vep",
+        "~{vep_path}",
         "--format", "vcf",
         "__OUTPUT_FORMAT_FLAG__",
         "--force_overwrite",
