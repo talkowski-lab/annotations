@@ -92,6 +92,7 @@ workflow vepAnnotateHail {
                     vep_hail_docker=vep_hail_docker,
                     reannotate_ac_af=reannotate_ac_af,
                     genome_build=genome_build,
+                    python_version=python_version,
                     runtime_attr_override=runtime_attr_vep_annotate
             }
 

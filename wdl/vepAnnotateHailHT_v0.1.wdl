@@ -58,6 +58,7 @@ workflow vepAnnotateHail {
         eve_data_idx=eve_data+'.tbi',
         vep_hail_docker=vep_hail_docker,
         genome_build=genome_build,
+        python_version=python_version,
         vep_annotate_hail_ht_python_script=vep_annotate_hail_ht_python_script,
         loeuf_v2_uri=loeuf_v2_uri,
         loeuf_v4_uri=loeuf_v4_uri,
