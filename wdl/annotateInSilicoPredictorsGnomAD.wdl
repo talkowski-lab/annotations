@@ -102,7 +102,6 @@ task annotateInSilicoPredictorsGnomAD {
             --spliceai_ht ~{spliceai_ht} \
             --vcf ~{vcf_file} \
             --output_vcf ~{annotated_vcf_name}
-        tabix ~{annotated_vcf_name}
     >>>
 
     output {
