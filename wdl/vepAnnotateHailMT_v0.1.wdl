@@ -16,7 +16,7 @@ struct RuntimeAttr {
 workflow vepAnnotateHailMT {
 
     input {
-        String? mt_uri
+        # String? mt_uri
         String vep_annotate_hail_mt_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_mt_v0.1.py"
         String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
         File hg38_fasta
@@ -32,11 +32,11 @@ workflow vepAnnotateHailMT {
         String hail_docker
         String vep_hail_docker
         String sv_base_mini_docker
-        Boolean split_by_chromosome
-        Boolean split_into_shards 
-        Array[String]? mt_shards  # if scatterMT.wdl already run before VEP
-        Array[String]? row_fields_to_keep=[false]
-        RuntimeAttr? runtime_attr_merge_vcfs
+        # Boolean split_by_chromosome
+        # Boolean split_into_shards 
+        Array[String] mt_shards  # if scatterMT.wdl already run before VEP
+        # Array[String]? row_fields_to_keep=[false]
+        # RuntimeAttr? runtime_attr_merge_vcfs
         RuntimeAttr? runtime_attr_vep_annotate
     }
 
@@ -147,7 +147,7 @@ task vepAnnotateMT {
         }' > vep_config.json
 
         curl ~{vep_annotate_hail_mt_script} > vep_annotate.py
-        python3.9 vep_annotate.py ~{mt_uri} ~{bucket_id} ~{cpu_cores} ~{memory}
+        python3 vep_annotate.py ~{mt_uri} ~{bucket_id} ~{cpu_cores} ~{memory}
         cp $(ls . | grep hail*.log) hail_log.txt
     >>>
 
