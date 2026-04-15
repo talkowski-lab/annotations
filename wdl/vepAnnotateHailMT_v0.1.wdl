@@ -32,6 +32,7 @@ workflow vepAnnotateHailMT {
         String hail_docker
         String vep_hail_docker
         String sv_base_mini_docker
+        String vep_path="/opt/vep/src/ensembl-vep/vep"
         # Boolean split_by_chromosome
         # Boolean split_into_shards 
         Array[String] mt_shards  # if scatterMT.wdl already run before VEP
@@ -65,6 +66,7 @@ workflow vepAnnotateHailMT {
                 loeuf_data=loeuf_data,
                 vep_hail_docker=vep_hail_docker,
                 bucket_id=bucket_id,
+                vep_path=vep_path,
                 runtime_attr_override=runtime_attr_vep_annotate
         }
     }
@@ -86,6 +88,7 @@ task vepAnnotateMT {
         File loeuf_data
         String vep_hail_docker
         String bucket_id
+        String vep_path
         RuntimeAttr? runtime_attr_override
     }
 
@@ -123,7 +126,7 @@ task vepAnnotateMT {
         tabix -f -s 76 -b 77 -e 78 ~{loeuf_data}
 
         echo '{"command": [
-        "/opt/vep/ensembl-vep/vep",
+        "~{vep_path}",
         "--format", "vcf",
         "__OUTPUT_FORMAT_FLAG__",
         "--force_overwrite",
