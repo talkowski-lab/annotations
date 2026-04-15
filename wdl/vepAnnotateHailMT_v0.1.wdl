@@ -28,6 +28,7 @@ workflow vepAnnotateHailMT {
         File hg38_vep_cache
 
         File alpha_missense_file
+        File alpha_missense_file_idx
         File eve_data
 
         String bucket_id
@@ -67,6 +68,7 @@ workflow vepAnnotateHailMT {
                 gerp_conservation_scores=gerp_conservation_scores,
                 hg38_vep_cache=hg38_vep_cache,
                 alpha_missense_file=alpha_missense_file,
+                alpha_missense_file_idx=alpha_missense_file_idx,
                 eve_data=eve_data,
                 vep_hail_docker=vep_hail_docker,
                 bucket_id=bucket_id,
@@ -90,6 +92,7 @@ task vepAnnotateMT {
         File gerp_conservation_scores
         File hg38_vep_cache
         File alpha_missense_file
+        File alpha_missense_file_idx
         File eve_data
         String vep_hail_docker
         String bucket_id
@@ -145,7 +148,7 @@ task vepAnnotateMT {
         "--assembly", "GRCh38",
         "--fasta", "~{top_level_fa}",
         "--plugin", "AlphaMissense,file=~{alpha_missense_file}",
-        "--plugin", "EVE,file=~{eve_data}",        
+        "--plugin", "EVE,file=~{eve_data}",
         "-o", "STDOUT"],
         "env": {
         "PERL5LIB": "/opt/vep/Plugins/"
