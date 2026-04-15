@@ -28,7 +28,6 @@ workflow vepAnnotateHailMT {
         File hg38_vep_cache
 
         File alpha_missense_file
-        File alpha_missense_file_idx
         File eve_data
 
         String bucket_id
@@ -68,8 +67,9 @@ workflow vepAnnotateHailMT {
                 gerp_conservation_scores=gerp_conservation_scores,
                 hg38_vep_cache=hg38_vep_cache,
                 alpha_missense_file=alpha_missense_file,
-                alpha_missense_file_idx=alpha_missense_file_idx,
+                alpha_missense_file_idx=alpha_missense_file+'.tbi',
                 eve_data=eve_data,
+                eve_data_idx=eve_data+'.tbi',
                 vep_hail_docker=vep_hail_docker,
                 bucket_id=bucket_id,
                 vep_path=vep_path,
@@ -94,6 +94,7 @@ task vepAnnotateMT {
         File alpha_missense_file
         File alpha_missense_file_idx
         File eve_data
+        File eve_data_idx
         String vep_hail_docker
         String bucket_id
         String vep_path
