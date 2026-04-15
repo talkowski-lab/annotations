@@ -35,7 +35,8 @@ workflow vepAnnotateHail {
         String vep_hail_docker
         String sv_base_mini_docker
         
-        String python_version='python3.9'
+        String python_version='python3'
+        String vep_path="/opt/vep/src/ensembl-vep/vep"
         String vep_annotate_hail_python_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_v0.1.py"
         String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
 
@@ -93,6 +94,7 @@ workflow vepAnnotateHail {
                     reannotate_ac_af=reannotate_ac_af,
                     genome_build=genome_build,
                     python_version=python_version,
+                    vep_path=vep_path,
                     runtime_attr_override=runtime_attr_vep_annotate
             }
 
@@ -137,6 +139,7 @@ workflow vepAnnotateHail {
                     vep_hail_docker=vep_hail_docker,
                     reannotate_ac_af=reannotate_ac_af,
                     python_version=python_version,
+                    vep_path=vep_path,
                     genome_build=genome_build,
                     runtime_attr_override=runtime_attr_vep_annotate
             }
@@ -179,6 +182,7 @@ task vepAnnotate {
         String vep_annotate_hail_python_script
         Boolean reannotate_ac_af
         String python_version
+        String vep_path
         RuntimeAttr? runtime_attr_override
     }
 
@@ -219,7 +223,7 @@ task vepAnnotate {
         tar xzf ~{ref_vep_cache} -C $dir_cache
 
         echo '{"command": [
-        "/opt/vep/ensembl-vep/vep",
+        "~{vep_path}",
         "--format", "vcf",
         "__OUTPUT_FORMAT_FLAG__",
         "--force_overwrite",

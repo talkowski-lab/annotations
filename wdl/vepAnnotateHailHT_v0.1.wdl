@@ -24,7 +24,7 @@ workflow vepAnnotateHail {
 
         String vep_hail_docker
         String genome_build='GRCh38'
-        String python_version='python3.9'
+        String python_version='python3'
         String vep_path='/opt/vep/ensembl-vep/vep'
         String vep_annotate_hail_ht_python_script
 
