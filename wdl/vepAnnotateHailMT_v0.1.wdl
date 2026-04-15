@@ -26,7 +26,10 @@ workflow vepAnnotateHailMT {
         File top_level_fa
         File gerp_conservation_scores
         File hg38_vep_cache
-        File loeuf_data
+
+        File alpha_missense_file
+        File eve_data
+
         String bucket_id
         String cohort_prefix
         String hail_docker
@@ -63,7 +66,8 @@ workflow vepAnnotateHailMT {
                 human_ancestor_fa_fai=human_ancestor_fa_fai,
                 gerp_conservation_scores=gerp_conservation_scores,
                 hg38_vep_cache=hg38_vep_cache,
-                loeuf_data=loeuf_data,
+                alpha_missense_file=alpha_missense_file,
+                eve_data=eve_data,
                 vep_hail_docker=vep_hail_docker,
                 bucket_id=bucket_id,
                 vep_path=vep_path,
@@ -85,7 +89,8 @@ task vepAnnotateMT {
         File human_ancestor_fa_fai
         File gerp_conservation_scores
         File hg38_vep_cache
-        File loeuf_data
+        File alpha_missense_file
+        File eve_data
         String vep_hail_docker
         String bucket_id
         String vep_path
@@ -123,7 +128,6 @@ task vepAnnotateMT {
 
         dir_cache=$(dirname "~{hg38_vep_cache}")
         tar xzf ~{hg38_vep_cache} -C $dir_cache
-        tabix -f -s 76 -b 77 -e 78 ~{loeuf_data}
 
         echo '{"command": [
         "~{vep_path}",
@@ -140,8 +144,8 @@ task vepAnnotateMT {
         "--minimal",
         "--assembly", "GRCh38",
         "--fasta", "~{top_level_fa}",
-        "--plugin", "LOEUF,file=~{loeuf_data},match_by=transcript",
-        "--plugin", "LoF,loftee_path:/opt/vep/Plugins/,human_ancestor_fa:~{human_ancestor_fa},gerp_bigwig:~{gerp_conservation_scores}",
+        "--plugin", "AlphaMissense,file=~{alpha_missense_file}",
+        "--plugin", "EVE,file=~{eve_data}",        
         "-o", "STDOUT"],
         "env": {
         "PERL5LIB": "/opt/vep/Plugins/"
