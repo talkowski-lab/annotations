@@ -13,32 +13,34 @@ struct RuntimeAttr {
 
 workflow annotateNonCoding {
     input {
-        String ht_uri
+        Array[String] ht_uris
         String bucket_id
         File noncoding_bed
 
         String genome_build='GRCh38'
         String hail_docker        
     }
-
-    call helpers.getHailMTSize as getInputHTSize {
-        input:
-            mt_uri=ht_uri,
-            hail_docker=hail_docker
-    }
     
-    call annotateHTFromBed {
-        input:
-        ht_uri=ht_uri,
-        bucket_id=bucket_id,
-        genome_build=genome_build,
-        noncoding_bed=noncoding_bed,
-        hail_docker=hail_docker,
-        ht_size=getInputHTSize.mt_size
+    scatter (ht_uri in ht_uris) {
+        call helpers.getHailMTSize as getInputHTSize {
+            input:
+                mt_uri=ht_uri,
+                hail_docker=hail_docker
+        }
+        
+        call annotateHTFromBed {
+            input:
+            ht_uri=ht_uri,
+            bucket_id=bucket_id,
+            genome_build=genome_build,
+            noncoding_bed=noncoding_bed,
+            hail_docker=hail_docker,
+            ht_size=getInputHTSize.mt_size
+        }
     }
 
     output {
-        String output_ht = annotateHTFromBed.output_ht
+        Array[String] output_ht = annotateHTFromBed.output_ht
     }
 }
 
