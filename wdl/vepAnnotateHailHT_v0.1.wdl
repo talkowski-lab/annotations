@@ -13,7 +13,7 @@ struct RuntimeAttr {
 
 workflow vepAnnotateHail {
     input {
-        String ht_uri
+        Array[String] ht_uris
         String bucket_id
 
         File top_level_fa
@@ -40,41 +40,43 @@ workflow vepAnnotateHail {
         String mpc_v2_ht_uri
     }
 
-    call helpers.getHailMTSize as getInputHTSize {
-        input:
-            mt_uri=ht_uri,
-            hail_docker=vep_hail_docker
-    }
+    scatter (ht_uri in ht_uris) {
+        call helpers.getHailMTSize as getInputHTSize {
+            input:
+                mt_uri=ht_uri,
+                hail_docker=vep_hail_docker
+        }
 
-    call vepAnnotate {
-        input:
-        ht_uri=ht_uri,
-        bucket_id=bucket_id,
-        ht_size=getInputHTSize.mt_size,
-        top_level_fa=top_level_fa,
-        ref_vep_cache=ref_vep_cache,
-        alpha_missense_file=alpha_missense_file,
-        alpha_missense_file_idx=alpha_missense_file+'.tbi',
-        eve_data=eve_data,
-        eve_data_idx=eve_data+'.tbi',
-        vep_hail_docker=vep_hail_docker,
-        genome_build=genome_build,
-        vep_path=vep_path,
-        python_version=python_version,
-        vep_annotate_hail_ht_python_script=vep_annotate_hail_ht_python_script,
-        loeuf_v2_uri=loeuf_v2_uri,
-        loeuf_v4_uri=loeuf_v4_uri,
-        revel_file=revel_file,
-        revel_file_idx=revel_file+'.tbi',
-        clinvar_vcf_uri=clinvar_vcf_uri,
-        inheritance_uri=inheritance_uri,
-        gene_list=select_first([gene_list, 'NA']),
-        mpc_v1_ht_uri=mpc_v1_ht_uri,
-        mpc_v2_ht_uri=mpc_v2_ht_uri
+        call vepAnnotate {
+            input:
+            ht_uri=ht_uri,
+            bucket_id=bucket_id,
+            ht_size=getInputHTSize.mt_size,
+            top_level_fa=top_level_fa,
+            ref_vep_cache=ref_vep_cache,
+            alpha_missense_file=alpha_missense_file,
+            alpha_missense_file_idx=alpha_missense_file+'.tbi',
+            eve_data=eve_data,
+            eve_data_idx=eve_data+'.tbi',
+            vep_hail_docker=vep_hail_docker,
+            genome_build=genome_build,
+            vep_path=vep_path,
+            python_version=python_version,
+            vep_annotate_hail_ht_python_script=vep_annotate_hail_ht_python_script,
+            loeuf_v2_uri=loeuf_v2_uri,
+            loeuf_v4_uri=loeuf_v4_uri,
+            revel_file=revel_file,
+            revel_file_idx=revel_file+'.tbi',
+            clinvar_vcf_uri=clinvar_vcf_uri,
+            inheritance_uri=inheritance_uri,
+            gene_list=select_first([gene_list, 'NA']),
+            mpc_v1_ht_uri=mpc_v1_ht_uri,
+            mpc_v2_ht_uri=mpc_v2_ht_uri
+        }
     }
-
+    
     output {
-        String vep_annot_ht = vepAnnotate.vep_annot_ht
+        Array[String] vep_annot_ht = vepAnnotate.vep_annot_ht
     }
 }
 
