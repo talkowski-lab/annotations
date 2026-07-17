@@ -46,12 +46,22 @@ workflow vepAnnotateHail {
         Boolean merge_split_vcf
         Boolean reannotate_ac_af=false
         Int shards_per_chunk=10  # combine pre-sharded VCFs
+
+        # passed through to scatterVCF.scatterVCF_workflow -- only used when split_by_chromosome
+        # and/or split_into_shards are true and vcf_shards is not already provided
+        Boolean localize_vcf=true
+        Boolean get_chromosome_sizes=false
+        Boolean has_index=false
+        Int n_shards=0
+        Int records_per_shard=0
         
         Array[File]? vcf_shards  # if scatterVCF.wdl already run before VEP
         
         RuntimeAttr? runtime_attr_merge_vcfs
         RuntimeAttr? runtime_attr_vep_annotate
         RuntimeAttr? runtime_attr_annotate_add_genotypes
+        RuntimeAttr? runtime_attr_split_by_chr
+        RuntimeAttr? runtime_attr_split_into_shards
     }
 
     if (defined(vcf_shards)) {
@@ -121,6 +131,13 @@ workflow vepAnnotateHail {
                     sv_base_mini_docker=sv_base_mini_docker,
                     split_by_chromosome=split_by_chromosome,
                     split_into_shards=split_into_shards,
+                    localize_vcf=localize_vcf,
+                    get_chromosome_sizes=get_chromosome_sizes,
+                    has_index=has_index,
+                    n_shards=n_shards,
+                    records_per_shard=records_per_shard,
+                    runtime_attr_split_by_chr=runtime_attr_split_by_chr,
+                    runtime_attr_split_into_shards=runtime_attr_split_into_shards
             }
         }
         Array[File] vcf_shards_ = select_first([scatterVCF.vcf_shards, vcf_shards])
