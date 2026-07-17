@@ -36,7 +36,7 @@ workflow vepAnnotateHail {
         String sv_base_mini_docker
         
         String python_version='python3'
-        String vep_path="/opt/vep/src/ensembl-vep/vep"
+        String vep_path="/opt/vep/ensembl-vep/vep"
         String vep_annotate_hail_python_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_v0.1.py"
         String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
 
