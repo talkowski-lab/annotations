@@ -1,8 +1,8 @@
 version 1.0
     
 import "mergeSplitVCF.wdl" as mergeSplitVCF
-import "mergeVCFs.wdl" as mergeVCFs
-import "helpers.wdl" as helpers
+import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/eren_dev/wdl/mergeVCFs.wdl" as mergeVCFs
+import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/eren_dev/wdl/helpers.wdl" as helpers
 
 struct RuntimeAttr {
     Float? mem_gb
@@ -16,7 +16,7 @@ struct RuntimeAttr {
 workflow vepAnnotateHailMT {
 
     input {
-        String? mt_uri
+        # String? mt_uri
         String vep_annotate_hail_mt_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_mt_v0.1.py"
         String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
         File hg38_fasta
@@ -26,17 +26,21 @@ workflow vepAnnotateHailMT {
         File top_level_fa
         File gerp_conservation_scores
         File hg38_vep_cache
-        File loeuf_data
+
+        File alpha_missense_file
+        File eve_data
+
         String bucket_id
         String cohort_prefix
         String hail_docker
         String vep_hail_docker
         String sv_base_mini_docker
-        Boolean split_by_chromosome
-        Boolean split_into_shards 
-        Array[String]? mt_shards  # if scatterMT.wdl already run before VEP
-        Array[String]? row_fields_to_keep=[false]
-        RuntimeAttr? runtime_attr_merge_vcfs
+        String vep_path="/opt/vep/src/ensembl-vep/vep"
+        # Boolean split_by_chromosome
+        # Boolean split_into_shards 
+        Array[String] mt_shards  # if scatterMT.wdl already run before VEP
+        # Array[String]? row_fields_to_keep=[false]
+        # RuntimeAttr? runtime_attr_merge_vcfs
         RuntimeAttr? runtime_attr_vep_annotate
     }
 
@@ -62,9 +66,13 @@ workflow vepAnnotateHailMT {
                 human_ancestor_fa_fai=human_ancestor_fa_fai,
                 gerp_conservation_scores=gerp_conservation_scores,
                 hg38_vep_cache=hg38_vep_cache,
-                loeuf_data=loeuf_data,
+                alpha_missense_file=alpha_missense_file,
+                alpha_missense_file_idx=alpha_missense_file+'.tbi',
+                eve_data=eve_data,
+                eve_data_idx=eve_data+'.tbi',
                 vep_hail_docker=vep_hail_docker,
                 bucket_id=bucket_id,
+                vep_path=vep_path,
                 runtime_attr_override=runtime_attr_vep_annotate
         }
     }
@@ -83,9 +91,13 @@ task vepAnnotateMT {
         File human_ancestor_fa_fai
         File gerp_conservation_scores
         File hg38_vep_cache
-        File loeuf_data
+        File alpha_missense_file
+        File alpha_missense_file_idx
+        File eve_data
+        File eve_data_idx
         String vep_hail_docker
         String bucket_id
+        String vep_path
         RuntimeAttr? runtime_attr_override
     }
 
@@ -120,10 +132,9 @@ task vepAnnotateMT {
 
         dir_cache=$(dirname "~{hg38_vep_cache}")
         tar xzf ~{hg38_vep_cache} -C $dir_cache
-        tabix -f -s 76 -b 77 -e 78 ~{loeuf_data}
 
         echo '{"command": [
-        "/opt/vep/ensembl-vep/vep",
+        "~{vep_path}",
         "--format", "vcf",
         "__OUTPUT_FORMAT_FLAG__",
         "--force_overwrite",
@@ -137,8 +148,8 @@ task vepAnnotateMT {
         "--minimal",
         "--assembly", "GRCh38",
         "--fasta", "~{top_level_fa}",
-        "--plugin", "LOEUF,file=~{loeuf_data},match_by=transcript",
-        "--plugin", "LoF,loftee_path:/opt/vep/Plugins/,human_ancestor_fa:~{human_ancestor_fa},gerp_bigwig:~{gerp_conservation_scores}",
+        "--plugin", "AlphaMissense,file=~{alpha_missense_file}",
+        "--plugin", "EVE,file=~{eve_data}",
         "-o", "STDOUT"],
         "env": {
         "PERL5LIB": "/opt/vep/Plugins/"
@@ -147,7 +158,7 @@ task vepAnnotateMT {
         }' > vep_config.json
 
         curl ~{vep_annotate_hail_mt_script} > vep_annotate.py
-        python3.9 vep_annotate.py ~{mt_uri} ~{bucket_id} ~{cpu_cores} ~{memory}
+        python3 vep_annotate.py ~{mt_uri} ~{bucket_id} ~{cpu_cores} ~{memory}
         cp $(ls . | grep hail*.log) hail_log.txt
     >>>
 

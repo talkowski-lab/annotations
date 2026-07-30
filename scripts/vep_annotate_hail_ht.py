@@ -45,9 +45,9 @@ gcp_project = args.project_id
 
 hl.init(min_block_size=128, 
         spark_conf={"spark.executor.cores": cores, 
-                    "spark.executor.memory": f"{int(np.floor(mem*0.4))}g",
+                    "spark.executor.memory": f"{int(np.floor(mem*0.5))}g",
                     "spark.driver.cores": cores,
-                    "spark.driver.memory": f"{int(np.floor(mem*0.4))}g",
+                    "spark.driver.memory": f"{int(np.floor(mem*0.5))}g",
         #             'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
         #             'spark.hadoop.fs.gs.requester.pays.buckets': 'hail-datasets-us-central1',
         #             'spark.hadoop.fs.gs.requester.pays.project.id': gcp_project,
@@ -71,7 +71,8 @@ ht = ht.annotate(MPC_v2=mpc_v2[ht.locus, ht.alleles].mpc)
 if build=='GRCh38':
     clinvar_vcf = hl.import_vcf(clinvar_vcf_uri,
                             reference_genome='GRCh38',
-                            force_bgz=clinvar_vcf_uri.split('.')[-1] in ['gz', 'bgz'])
+                            force_bgz=clinvar_vcf_uri.split('.')[-1] in ['gz', 'bgz'],
+                            skip_invalid_loci=True)
     ht = ht.annotate(CLNSIG=clinvar_vcf.rows()[ht.key].info.CLNSIG,
                                                   CLNREVSTAT=clinvar_vcf.rows()[ht.key].info.CLNREVSTAT)
 
@@ -118,8 +119,8 @@ inheritance_ht = hl.import_table(inheritance_uri).key_by('approvedGeneSymbol')
 ht_by_gene = ht_by_transcript.key_by(ht_by_transcript.vep.transcript_consequences.SYMBOL)
 ht_by_gene = ht_by_gene.annotate(vep=ht_by_gene.vep.annotate(
     transcript_consequences=ht_by_gene.vep.transcript_consequences.annotate(    
-        inheritance_code=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.row_key]), inheritance_ht[ht_by_gene.row_key].inheritance_code, ''),
-        genCC_classification=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.row_key]), inheritance_ht[ht_by_gene.row_key].genCC_classification, '')
+        inheritance_code=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.key]), inheritance_ht[ht_by_gene.key].inheritance_code, ''),
+        genCC_classification=hl.if_else(hl.is_defined(inheritance_ht[ht_by_gene.key]), inheritance_ht[ht_by_gene.key].genCC_classification, '')
         )
     )
 )
@@ -137,11 +138,12 @@ if gene_list!='NA':
 ht_by_gene = (ht_by_gene.group_by(ht_by_gene.locus, ht_by_gene.alleles)
     .aggregate(transcript_consequences = hl.agg.collect(ht_by_gene.vep.transcript_consequences)))
 
-fields = [''] + list(ht_by_gene.vep.transcript_consequences[0])
-# only adds new CSQ fields to header, overwrites if already present
-csq_fields_str = hl.eval(ht.vep_csq_header) + '|'.join(fields)
-
 ht = ht.annotate(vep=hl.Struct(**{'transcript_consequences': ht_by_gene[ht.key].transcript_consequences}))
+
+fields = [''] + list(ht.vep.transcript_consequences[0])
+# only adds new CSQ fields to header, overwrites if already present
+csq_fields_str = hl.eval(ht.vep_csq_header).split('Format: ')[0] + 'Format: ' + '|'.join(fields)
+
 ht = ht.drop('vep_csq_header')
 ht = ht.annotate(vep_csq_header=csq_fields_str)
 

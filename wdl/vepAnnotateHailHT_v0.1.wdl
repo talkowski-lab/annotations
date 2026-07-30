@@ -1,6 +1,6 @@
 version 1.0
     
-import "helpers.wdl" as helpers
+import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/eren_dev/wdl/helpers.wdl" as helpers
 
 struct RuntimeAttr {
     Float? mem_gb
@@ -13,7 +13,7 @@ struct RuntimeAttr {
 
 workflow vepAnnotateHail {
     input {
-        String ht_uri
+        Array[String] ht_uris
         String bucket_id
 
         File top_level_fa
@@ -24,6 +24,8 @@ workflow vepAnnotateHail {
 
         String vep_hail_docker
         String genome_build='GRCh38'
+        String python_version='python3'
+        String vep_path='/opt/vep/ensembl-vep/vep'
         String vep_annotate_hail_ht_python_script
 
         # from extra
@@ -38,39 +40,43 @@ workflow vepAnnotateHail {
         String mpc_v2_ht_uri
     }
 
-    call helpers.getHailMTSize as getInputHTSize {
-        input:
-            mt_uri=ht_uri,
-            hail_docker=vep_hail_docker
-    }
+    scatter (ht_uri in ht_uris) {
+        call helpers.getHailMTSize as getInputHTSize {
+            input:
+                mt_uri=ht_uri,
+                hail_docker=vep_hail_docker
+        }
 
-    call vepAnnotate {
-        input:
-        ht_uri=ht_uri,
-        bucket_id=bucket_id,
-        ht_size=getInputHTSize.mt_size,
-        top_level_fa=top_level_fa,
-        ref_vep_cache=ref_vep_cache,
-        alpha_missense_file=alpha_missense_file,
-        alpha_missense_file_idx=alpha_missense_file+'.tbi',
-        eve_data=eve_data,
-        eve_data_idx=eve_data+'.tbi',
-        vep_hail_docker=vep_hail_docker,
-        genome_build=genome_build,
-        vep_annotate_hail_ht_python_script=vep_annotate_hail_ht_python_script,
-        loeuf_v2_uri=loeuf_v2_uri,
-        loeuf_v4_uri=loeuf_v4_uri,
-        revel_file=revel_file,
-        revel_file_idx=revel_file+'.tbi',
-        clinvar_vcf_uri=clinvar_vcf_uri,
-        inheritance_uri=inheritance_uri,
-        gene_list=select_first([gene_list, 'NA']),
-        mpc_v1_ht_uri=mpc_v1_ht_uri,
-        mpc_v2_ht_uri=mpc_v2_ht_uri
+        call vepAnnotate {
+            input:
+            ht_uri=ht_uri,
+            bucket_id=bucket_id,
+            ht_size=getInputHTSize.mt_size,
+            top_level_fa=top_level_fa,
+            ref_vep_cache=ref_vep_cache,
+            alpha_missense_file=alpha_missense_file,
+            alpha_missense_file_idx=alpha_missense_file+'.tbi',
+            eve_data=eve_data,
+            eve_data_idx=eve_data+'.tbi',
+            vep_hail_docker=vep_hail_docker,
+            genome_build=genome_build,
+            vep_path=vep_path,
+            python_version=python_version,
+            vep_annotate_hail_ht_python_script=vep_annotate_hail_ht_python_script,
+            loeuf_v2_uri=loeuf_v2_uri,
+            loeuf_v4_uri=loeuf_v4_uri,
+            revel_file=revel_file,
+            revel_file_idx=revel_file+'.tbi',
+            clinvar_vcf_uri=clinvar_vcf_uri,
+            inheritance_uri=inheritance_uri,
+            gene_list=select_first([gene_list, 'NA']),
+            mpc_v1_ht_uri=mpc_v1_ht_uri,
+            mpc_v2_ht_uri=mpc_v2_ht_uri
+        }
     }
-
+    
     output {
-        String vep_annot_ht = vepAnnotate.vep_annot_ht
+        Array[String] vep_annot_ht = vepAnnotate.vep_annot_ht
     }
 }
 
@@ -94,6 +100,8 @@ task vepAnnotate {
         String vep_hail_docker
         String genome_build
         String vep_annotate_hail_ht_python_script
+        String python_version
+        String vep_path
 
         # from extra
         String loeuf_v2_uri
@@ -142,7 +150,7 @@ task vepAnnotate {
         tar xzf ~{ref_vep_cache} -C $dir_cache
 
         echo '{"command": [
-        "/opt/vep/ensembl-vep/vep",
+        "~{vep_path}",
         "--format", "vcf",
         "__OUTPUT_FORMAT_FLAG__",
         "--force_overwrite",
@@ -167,7 +175,7 @@ task vepAnnotate {
 
         curl ~{vep_annotate_hail_ht_python_script} > vep_annotate.py
         proj_id=$(gcloud config get-value project)
-        python3.9 vep_annotate.py -i ~{ht_uri} --bucket-id ~{bucket_id} --cores ~{cpu_cores} --mem ~{memory} \
+        ~{python_version} vep_annotate.py -i ~{ht_uri} --bucket-id ~{bucket_id} --cores ~{cpu_cores} --mem ~{memory} \
         --build ~{genome_build} --project-id $proj_id --loeuf-v2 ~{loeuf_v2_uri} --loeuf-v4 ~{loeuf_v4_uri} \
         --mpc-v1 ~{mpc_v1_ht_uri} --mpc-v2 ~{mpc_v2_ht_uri} --clinvar ~{clinvar_vcf_uri} --inheritance ~{inheritance_uri} \
         --revel ~{revel_file} --genes ~{gene_list} 

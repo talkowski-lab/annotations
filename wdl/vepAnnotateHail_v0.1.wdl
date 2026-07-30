@@ -2,8 +2,8 @@ version 1.0
     
 import "scatterVCF.wdl" as scatterVCF
 import "mergeSplitVCF.wdl" as mergeSplitVCF
-import "mergeVCFs.wdl" as mergeVCFs
-import "helpers.wdl" as helpers
+import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/eren_dev/wdl/mergeVCFs.wdl" as mergeVCFs
+import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/eren_dev/wdl/helpers.wdl" as helpers
 
 struct RuntimeAttr {
     Float? mem_gb
@@ -35,6 +35,8 @@ workflow vepAnnotateHail {
         String vep_hail_docker
         String sv_base_mini_docker
         
+        String python_version='python3'
+        String vep_path="/opt/vep/ensembl-vep/vep"
         String vep_annotate_hail_python_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/vep_annotate_hail_v0.1.py"
         String split_vcf_hail_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/split_vcf_hail.py"
 
@@ -44,12 +46,22 @@ workflow vepAnnotateHail {
         Boolean merge_split_vcf
         Boolean reannotate_ac_af=false
         Int shards_per_chunk=10  # combine pre-sharded VCFs
+
+        # passed through to scatterVCF.scatterVCF_workflow -- only used when split_by_chromosome
+        # and/or split_into_shards are true and vcf_shards is not already provided
+        Boolean localize_vcf=true
+        Boolean get_chromosome_sizes=false
+        Boolean has_index=false
+        Int n_shards=0
+        Int records_per_shard=0
         
         Array[File]? vcf_shards  # if scatterVCF.wdl already run before VEP
         
         RuntimeAttr? runtime_attr_merge_vcfs
         RuntimeAttr? runtime_attr_vep_annotate
         RuntimeAttr? runtime_attr_annotate_add_genotypes
+        RuntimeAttr? runtime_attr_split_by_chr
+        RuntimeAttr? runtime_attr_split_into_shards
     }
 
     if (defined(vcf_shards)) {
@@ -91,6 +103,8 @@ workflow vepAnnotateHail {
                     vep_hail_docker=vep_hail_docker,
                     reannotate_ac_af=reannotate_ac_af,
                     genome_build=genome_build,
+                    python_version=python_version,
+                    vep_path=vep_path,
                     runtime_attr_override=runtime_attr_vep_annotate
             }
 
@@ -117,6 +131,13 @@ workflow vepAnnotateHail {
                     sv_base_mini_docker=sv_base_mini_docker,
                     split_by_chromosome=split_by_chromosome,
                     split_into_shards=split_into_shards,
+                    localize_vcf=localize_vcf,
+                    get_chromosome_sizes=get_chromosome_sizes,
+                    has_index=has_index,
+                    n_shards=n_shards,
+                    records_per_shard=records_per_shard,
+                    runtime_attr_split_by_chr=runtime_attr_split_by_chr,
+                    runtime_attr_split_into_shards=runtime_attr_split_into_shards
             }
         }
         Array[File] vcf_shards_ = select_first([scatterVCF.vcf_shards, vcf_shards])
@@ -134,6 +155,8 @@ workflow vepAnnotateHail {
                     eve_data_idx=eve_data+'.tbi',
                     vep_hail_docker=vep_hail_docker,
                     reannotate_ac_af=reannotate_ac_af,
+                    python_version=python_version,
+                    vep_path=vep_path,
                     genome_build=genome_build,
                     runtime_attr_override=runtime_attr_vep_annotate
             }
@@ -175,6 +198,8 @@ task vepAnnotate {
         String genome_build
         String vep_annotate_hail_python_script
         Boolean reannotate_ac_af
+        String python_version
+        String vep_path
         RuntimeAttr? runtime_attr_override
     }
 
@@ -215,7 +240,7 @@ task vepAnnotate {
         tar xzf ~{ref_vep_cache} -C $dir_cache
 
         echo '{"command": [
-        "/opt/vep/ensembl-vep/vep",
+        "~{vep_path}",
         "--format", "vcf",
         "__OUTPUT_FORMAT_FLAG__",
         "--force_overwrite",
@@ -240,7 +265,7 @@ task vepAnnotate {
 
         curl ~{vep_annotate_hail_python_script} > vep_annotate.py
         proj_id=$(gcloud config get-value project)
-        python3.9 vep_annotate.py -i ~{vcf_file} -o ~{vep_annotated_vcf_name} --cores ~{cpu_cores} --mem ~{memory} \
+        ~{python_version} vep_annotate.py -i ~{vcf_file} -o ~{vep_annotated_vcf_name} --cores ~{cpu_cores} --mem ~{memory} \
         --reannotate-ac-af ~{reannotate_ac_af} --build ~{genome_build} --project-id $proj_id
         cp $(ls . | grep hail*.log) hail_log.txt
         bcftools index -t ~{vep_annotated_vcf_name}

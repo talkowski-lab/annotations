@@ -7,6 +7,7 @@ import ast
 import os
 import json
 import argparse
+import datetime
 
 parser = argparse.ArgumentParser(description='Parse arguments')
 parser.add_argument('-i', dest='vcf_file', help='Input VCF file')
@@ -24,6 +25,7 @@ parser.add_argument('--spliceAI-snv', dest='spliceAI_snv_uri', help='SpliceAI sc
 parser.add_argument('--spliceAI-indel', dest='spliceAI_indel_uri', help='SpliceAI scores Indel HT')
 parser.add_argument('--genes', dest='gene_list_tsv', help='OPTIONAL: Gene list file, tab-separated "gene_list_name"\t"gene_list_uri"')
 parser.add_argument('--project-id', dest='project_id', help='Google Project ID')
+parser.add_argument('--clinvar-fields', dest='clinvar_fields', help='Fields to annotate from INFO in the ClinVar VCF')
 
 args = parser.parse_args()
 
@@ -42,6 +44,7 @@ spliceAI_snv_uri = args.spliceAI_snv_uri
 spliceAI_indel_uri = args.spliceAI_indel_uri
 gene_list_tsv = args.gene_list_tsv
 gcp_project = args.project_id
+clinvar_fields = args.clinvar_fields.split(',')
 
 hl.init(min_block_size=128, 
         local=f"local[*]", 
@@ -65,15 +68,17 @@ if build=='GRCh38':
                             reference_genome='GRCh38',
                             force_bgz=clinvar_vcf_uri.split('.')[-1] in ['gz', 'bgz'],
                             skip_invalid_loci=True)
+    clinvar_build = os.path.basename(clinvar_vcf_uri).split('_')[1]
+    clinvar_build = datetime.datetime.strptime(clinvar_build, "%Y%m%d").strftime("%m-%d-%Y")
     # Grab ClinVar header
     clinvar_header = hl.get_vcf_metadata(clinvar_vcf_uri)
-    mt = mt.annotate_rows(info = mt.info.annotate(CLNSIG=clinvar_vcf.rows()[mt.row_key].info.CLNSIG,
-                                                  CLNREVSTAT=clinvar_vcf.rows()[mt.row_key].info.CLNREVSTAT,
-                                                  CLNSIGCONF=clinvar_vcf.rows()[mt.row_key].info.CLNSIGCONF)
-                                                  )
-    # TODO: add ClinVar fields to annotate as input to workflow instead of being hardcoded?
-    for clinvar_field in ['CLNSIG', 'CLNREVSTAT', 'CLNSIGCONF']:
-        header['info'][clinvar_field] = clinvar_header['info'][clinvar_field]
+    mt = mt.annotate_rows(info = mt.info.annotate(**{clinvar_field: 
+                                                     clinvar_vcf.rows()[mt.row_key].info[clinvar_field]
+                                                     for clinvar_field in clinvar_fields}))
+    for clinvar_field in clinvar_fields:
+        clinvar_field_header = clinvar_header['info'][clinvar_field]
+        clinvar_field_header['Description'] = clinvar_field_header['Description'] + f" [ClinVar build: {clinvar_build}]"
+        header['info'][clinvar_field] = clinvar_field_header
 
 # annotate REVEL
 revel_ht = hl.import_table(revel_file, force_bgz=True)

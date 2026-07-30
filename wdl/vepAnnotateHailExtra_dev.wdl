@@ -6,8 +6,8 @@ version 1.0
 
 import "scatterVCF.wdl" as scatterVCF
 import "mergeSplitVCF.wdl" as mergeSplitVCF
-import "mergeVCFs.wdl" as mergeVCFs
-import "helpers.wdl" as helpers
+import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/eren_dev/wdl/mergeVCFs.wdl" as mergeVCFs
+import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/eren_dev/wdl/helpers.wdl" as helpers
 
 struct RuntimeAttr {
     Float? mem_gb
@@ -43,6 +43,8 @@ workflow vepAnnotateHailExtra {
         String noncoding_bed='NA'
         String gene_list_tsv='NA'
 
+        Array[String] clinvar_fields = ['CLNSIG', 'CLNREVSTAT', 'CLNSIGCONF', 'GENEINFO']
+
         RuntimeAttr? runtime_attr_annotate_noncoding      
         RuntimeAttr? runtime_attr_annotate_extra
         RuntimeAttr? runtime_attr_annotate_spliceAI
@@ -76,6 +78,7 @@ workflow vepAnnotateHailExtra {
                 mpc_ht_uri=mpc_ht_uri,
                 hail_docker=hail_docker,
                 genome_build=genome_build,
+                clinvar_fields=clinvar_fields,
                 runtime_attr_override=runtime_attr_annotate_extra
         }
 
@@ -176,7 +179,7 @@ task annotateFromBed {
 
     bed = hl.import_bed(noncoding_bed, reference_genome=build, skip_invalid_intervals=True)
     mt = hl.import_vcf(vcf_file, drop_samples=True, force_bgz=True, array_elements_required=False, call_fields=[], reference_genome=build)
-    mt = mt.annotate_rows(info=mt.info.annotate(PREDICTED_NONCODING=bed[mt.locus].target))
+    mt = mt.annotate_rows(info=mt.info.annotate(PREDICTED_NONCODING = bed.index(mt.locus, all_matches=True).target))
 
     # filter only annotated
     if filter:
@@ -212,6 +215,8 @@ task annotateExtra {
         String hail_docker
         String genome_build
         String vep_annotate_hail_extra_python_script
+
+        Array[String] clinvar_fields
         RuntimeAttr? runtime_attr_override
     }
 
@@ -250,7 +255,7 @@ task annotateExtra {
         python3 annotate.py -i ~{vcf_file} -o ~{vep_annotated_vcf_name} --cores ~{cpu_cores} --mem ~{memory} \
         --build ~{genome_build} --loeuf-v2 ~{loeuf_v2_uri} --loeuf-v4 ~{loeuf_v4_uri} \
         --mpc ~{mpc_ht_uri} --clinvar ~{clinvar_vcf_uri} --inheritance ~{inheritance_uri} \
-        --revel ~{revel_file} --genes ~{gene_list_tsv} 
+        --revel ~{revel_file} --genes ~{gene_list_tsv} --clinvar-fields ~{sep=',' clinvar_fields} 
         cp $(ls . | grep hail*.log) hail_log.txt
     >>>
 
