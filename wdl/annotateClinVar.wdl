@@ -6,8 +6,8 @@ version 1.0
 
 import "scatterVCF.wdl" as scatterVCF
 import "mergeSplitVCF.wdl" as mergeSplitVCF
-import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/eren_dev/wdl/mergeVCFs.wdl" as mergeVCFs
-import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/eren_dev/wdl/helpers.wdl" as helpers
+import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/main/wdl/mergeVCFs.wdl" as mergeVCFs
+import "https://raw.githubusercontent.com/talkowski-lab/preprocessing/refs/heads/main/wdl/helpers.wdl" as helpers
 
 struct RuntimeAttr {
     Float? mem_gb
@@ -29,7 +29,7 @@ workflow AnnotateClinVar {
         String cohort_prefix
         String hail_docker
         
-        String annotate_clinvar_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/eren_dev/scripts/annotate_clinvar_hail.py"
+        String annotate_clinvar_script = "https://raw.githubusercontent.com/talkowski-lab/annotations/refs/heads/main/scripts/annotate_clinvar_hail.py"
         
         String genome_build='GRCh38'
 
